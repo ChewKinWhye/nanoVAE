@@ -38,11 +38,14 @@ git clone https://github.com/ChewKinWhye/nanoVAE.git
 ```
 2. Create venv
 ```sh
-Look up commands for venv
+cd nanoVAE
+python3 -m venv nano_env
+source nano_env/bin/activate 
 ```
 3. Install requirements
 ```sh
-pip install requirements.txt
+pip install -U pip
+pip install -r requirements.txt
 ```
 
 <!-- USAGE EXAMPLES -->
@@ -57,6 +60,8 @@ For RNA modifications
 ```sh
 python VAE_RNA.py --data_path /hdd/modifications/ecoli/deepsignal/ --data_size 900000 --output_filename VAE_RNA
 ```
+
+ADD OTHER IMPORTANT HYPER-PARAMETERS
 
 <!-- CONTACT -->
 ## Contact
