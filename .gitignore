@@ -1,0 +1,6 @@
+data
+utils/__pycache__
+*png
+results
+nanoGAN_env
+.idea
