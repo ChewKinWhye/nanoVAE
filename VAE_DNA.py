@@ -35,6 +35,7 @@ if __name__ == "__main__":
     test_results = compute_metrics_standardized(predictions, y_test)
     print_results(test_results)
 
+    save_results(args.output_filename, test_results, encoding_cluster_plt, vae.encoder, predictor)
     # Test model with multiple reads
     x_test_10, y_test_10 = load_multiple_reads_data(args)
     predictions = []
@@ -46,4 +47,3 @@ if __name__ == "__main__":
     test_results_10 = compute_metrics_standardized(np.asarray(predictions), y_test_10)
     print_results(test_results_10)
 
-    save_results(args.output_filename, test_results_10, encoding_cluster_plt, vae.encoder, predictor)

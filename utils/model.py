@@ -134,6 +134,10 @@ def load_vae_predictor(latent_dim):
     predictor_input = keras.Input(shape=(latent_dim * 2,))
     x = layers.Dense(8, activation="relu", kernel_initializer='random_normal',
                      bias_initializer='zeros')(predictor_input)
+    x = layers.Dense(16, activation="relu", kernel_initializer='random_normal', 
+                     bias_initializer='zeros')(x)
+    x = layers.Dense(8, activation="relu", kernel_initializer='random_normal', 
+                     bias_initializer='zeros')(x)
     predictor_output = layers.Dense(1, activation="sigmoid", kernel_initializer='random_normal',
                                     bias_initializer='zeros')(x)
     predictor = keras.Model(predictor_input, predictor_output, name="predictor")
