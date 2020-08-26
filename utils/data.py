@@ -6,6 +6,34 @@ from sklearn import preprocessing
 from sklearn.utils import shuffle
 
 
+def check_data(row):
+    signal_float = [float(i) for i in row[10].split(",")]
+    len_float = [float(i) for i in row[9].split(",")]
+    sd_float = [float(i) for i in row[8].split(",")]
+    # Check for data outliers
+    if max(signal_float) > 8 or min(signal_float) < -8 or max(len_float) > 300 or max(sd_float) > 2:
+        return False
+    # Check for data errors
+    if row[5].lower() == 'c':
+        return False
+    if row[6][6:11] != "ATCGA":
+        return False
+    return True
+
+
+def process_data(row):
+    dna_lookup = {"A": [0, 0, 0, 1], "T": [0, 0, 1, 0], "G": [0, 1, 0, 0], "C": [1, 0, 0, 0]}
+    row_data = []
+    for i in row[6]:
+        row_data.extend(dna_lookup[i])
+    row_data.extend(row[7].split(","))
+    row_data.extend(row[8].split(","))
+    row_data.extend(row[9].split(","))
+    row_data.extend([float(i) * 10 for i in row[10].split(",")])
+    row_data_float = [float(i) for i in row_data]
+    return row_data_float
+
+
 def load_rna_data_vae(data_size, data_path):
     train_size = int(data_size * 0.8)
     test_size = int(data_size * 0.1)
@@ -57,8 +85,6 @@ def load_dna_data_vae(data_size, data_path):
     test_size = int(data_size * 0.1 / 2)
     val_size = int(data_size * 0.1 / 2)
     total_size = train_size + test_size + val_size
-
-    dna_lookup = {"A": [0, 0, 0, 1], "T": [0, 0, 1, 0], "G": [0, 1, 0, 0], "C": [1, 0, 0, 0]}
     file_path_normal = os.path.join(data_path, "pcr.tsv")
     file_path_modified = os.path.join(data_path, "msssi.tsv")
 
@@ -66,65 +92,30 @@ def load_dna_data_vae(data_size, data_path):
     with open(file_path_normal) as tsv_file:
         read_tsv = csv.reader(tsv_file, delimiter="\t")
         non_modified_data = []
-        data_count = 0
-        outlier_counter = 0
+        data_count, outlier_counter = 0, 0
         for row in read_tsv:
             if data_count == total_size:
                 break
-            row_data = []
-            # Append the row data values
-            if row[6][6:11] != "ATCGA":
-                continue
-            for i in row[6]:
-                row_data.extend(dna_lookup[i])
-            row_data.extend(row[7].split(","))
-            row_data.extend(row[8].split(","))
-            row_data.extend(row[9].split(","))
-            row_data.extend([float(i)*10 for i in row[10].split(",")])
-            row_data_float = [float(i) for i in row_data]
-            signal_float = [float(i) for i in row[10].split(",")]
-            len_float = [float(i) for i in row[9].split(",")]
-            sd_float = [float(i) for i in row[8].split(",")]
-            # Check for data outliers
-            if max(signal_float) > 8 or min(signal_float) < -8 or max(len_float) > 300 or max(sd_float) > 2:
+            if check_data(row) is False:
                 outlier_counter += 1
                 continue
-            # Check for data errors
-            if row[5].lower() == 'c' or len(row_data) != 479 or row[-1] != "0":
-                continue
-
-            non_modified_data.append(row_data_float)
+            row_data = process_data(row)
+            non_modified_data.append(row_data)
             data_count += 1
 
+    # Extract data from modified
     with open(file_path_modified) as tsv_file:
         read_tsv = csv.reader(tsv_file, delimiter="\t")
         modified_data = []
         data_count = 0
         for i, row in enumerate(read_tsv):
-            # 3000 test data points
             if data_count == total_size:
                 break
-            if row[6][6:11] != 'ATCGA':
-                continue
-            row_data = []
-            for i in row[6]:
-                row_data.extend(dna_lookup[i])
-            row_data.extend(row[7].split(","))
-            row_data.extend(row[8].split(","))
-            row_data.extend(row[9].split(","))
-            row_data.extend([float(i)*10 for i in row[10].split(",")])
-            row_data_float = [float(i) for i in row_data]
-            signal_float = [float(i) for i in row[10].split(",")]
-            len_float = [float(i) for i in row[9].split(",")]
-            sd_float = [float(i) for i in row[8].split(",")]
-            # Check for data outliers
-            if max(signal_float) > 8 or min(signal_float) < -8 or max(len_float) > 300 or max(sd_float) > 2:
+            if check_data(row) is False:
                 outlier_counter += 1
                 continue
-            # Check for data errors
-            if row[5].lower() == 'c' or len(row_data) != 479 or row[-1] != "1":
-                continue
-            modified_data.append(row_data_float)
+            row_data = process_data(row)
+            modified_data.append(row_data)
             data_count += 1
 
     print(f"Number of outliers: {outlier_counter}")
@@ -136,20 +127,16 @@ def load_dna_data_vae(data_size, data_path):
     train_x.extend(non_modified_data[0:train_size])
     train_x = np.asarray(train_x)
     train_y = np.append(np.ones(train_size), np.zeros(train_size))
-    train_y.astype(int)
-    train_x, train_y = shuffle(train_x, train_y, random_state=0)
 
     test_x = modified_data[train_size:train_size + test_size]
     test_x.extend(non_modified_data[train_size:train_size + test_size])
     test_x = np.asarray(test_x)
     test_y = np.append(np.ones(test_size), np.zeros(test_size))
-    test_y.astype(int)
 
     val_x = modified_data[train_size + test_size:]
     val_x.extend(non_modified_data[train_size + test_size:])
     val_x = np.asarray(val_x)
     val_y = np.append(np.ones(val_size), np.zeros(val_size))
-    val_y.astype(int)
 
     print(f"Train data shape: {train_x.shape}")
     print(f"Train data labels shape: {train_y.shape}")
@@ -158,91 +145,57 @@ def load_dna_data_vae(data_size, data_path):
     print(f"Validation data shape: {val_x.shape}")
     print(f"Validation data labels shape: {val_y.shape}")
 
-    return train_x, train_y, test_x, test_y, val_x, val_y, 0, 0
+    return train_x, train_y.astype(int), test_x, test_y.astype(int), val_x, val_y.astype(int)
 
 
 def load_multiple_reads_data(args):
     test_size = 2500
+    total_size = 2000000
     # Global parameters
     file_path_normal = os.path.join(args.data_path, "pcr.tsv")
     file_path_modified = os.path.join(args.data_path, "msssi.tsv")
-    total_size = 2000000
+
     non_modified_duplicate = {}
-    non_modified_duplicate_10 = []
-    dna_lookup = {"A": [0, 0, 0, 1], "T": [0, 0, 1, 0], "G": [0, 1, 0, 0], "C": [1, 0, 0, 0]}
     test_x = []
     # Extract data from non-modified
     with open(file_path_normal) as tsv_file:
         read_tsv = csv.reader(tsv_file, delimiter="\t")
         data_count = 0
         for index, row in enumerate(read_tsv):
-            if index <= args.data_size / 2:
+            # Ignore the first x data points used for training, and check data
+            if index <= args.data_size / 2 or check_data(row) is False:
                 continue
             if data_count == total_size:
                 break
-            if row[6][6:11] != 'ATCGA':
-                continue
             if row[3] not in non_modified_duplicate:
                 non_modified_duplicate[row[3]] = []
-            # Append data instead of index
-            row_data = []
-            for i in row[6]:
-                row_data.extend(dna_lookup[i])
-            row_data.extend(row[7].split(","))
-            row_data.extend(row[8].split(","))
-            row_data.extend(row[9].split(","))
-            row_data.extend([float(i)*10 for i in row[10].split(",")]) 
-            row_data_float = [float(i) for i in row_data]
-            signal_float = [float(i) for i in row[10].split(",")]
-            len_float = [float(i) for i in row[9].split(",")]
-            sd_float = [float(i) for i in row[8].split(",")]
-            # Check for data outliers
-            if max(signal_float) > 8 or min(signal_float) < -8 or max(len_float) > 300 or max(sd_float) > 2:
-                continue
-            # Check for data errors
-            if row[5].lower() == 'c' or len(row_data) != 479 or row[-1] != "0":
-                continue
-            non_modified_duplicate[row[3]].append(row_data_float)
+            # Append data
+            row_data = process_data(row)
+            non_modified_duplicate[row[3]].append(row_data)
             data_count += 1
+
     # Find the ones with more than 10 reads
     for x in non_modified_duplicate:
         if len(non_modified_duplicate[x]) >= 10:
             test_x.append(non_modified_duplicate[x][0:10])
     non_modified_duplicate.clear()
     test_x = test_x[0:test_size]
+
     modified_duplicate = {}
-    modified_duplicate_10 = []
     # Extract data from modified
     with open(file_path_modified) as tsv_file:
         read_tsv = csv.reader(tsv_file, delimiter="\t")
         data_count = 0
         for index, row in enumerate(read_tsv):
-            if index <= args.data_size / 2:                                                                                             continue
+            # Ignore the first x data points used for training, and check data
+            if index <= args.data_size / 2 or check_data(row) is False:
+                continue
             if data_count == total_size:
                 break
-            if row[6][6:11] != 'ATCGA':
-                continue
             if row[3] not in modified_duplicate:
                 modified_duplicate[row[3]] = []
-            # Append data instead of index
-            row_data = []
-            for i in row[6]:
-                row_data.extend(dna_lookup[i])
-            row_data.extend(row[7].split(","))
-            row_data.extend(row[8].split(","))
-            row_data.extend(row[9].split(","))
-            row_data.extend([float(i)*10 for i in row[10].split(",")]) 
-            row_data_float = [float(i) for i in row_data]
-            signal_float = [float(i) for i in row[10].split(",")]
-            len_float = [float(i) for i in row[9].split(",")]
-            sd_float = [float(i) for i in row[8].split(",")]
-            # Check for data outliers
-            if max(signal_float) > 8 or min(signal_float) < -8 or max(len_float) > 300 or max(sd_float) > 2:
-                continue
-            # Check for data errors
-            if row[5].lower() == 'c' or len(row_data) != 479 or row[-1] != "1":
-                continue
-            modified_duplicate[row[3]].append(row_data_float)
+            row_data = process_data(row)
+            non_modified_duplicate[row[3]].append(row_data)
             data_count += 1
 
     # Find the ones with more than 10 reads

@@ -24,7 +24,7 @@ def compute_metrics_standardized(y_predicted, y_test):
     return accuracy, sensitivity, specificity, precision, au_roc, cm
 
 
-def plot_label_clusters(filename, encoder, data, labels):
+def plot_label_clusters(encoder, data, labels):
     # display a 2D plot of the digit classes in the latent space
     filter_indices = random.sample(range(0, data.shape[0]-1), 3000)
     data_sample = np.take(data, filter_indices, axis=0)

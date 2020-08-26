@@ -9,23 +9,24 @@ from utils.save import save_results
 if __name__ == "__main__":
     args = parse_args()
 
-    x_train, y_train, x_test, y_test, x_val, y_val, min_values, max_values = \
-        load_dna_data_vae(args.data_size, args.data_path)
+    x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_size, args.data_path)
 
     # Train VAE
     vae = VaeDNA(args.latent_dim)
     vae.compile(optimizer=keras.optimizers.Adam())
-    vae.fit(x_train, epochs=100, batch_size=128)
+    vae.fit(x_train, epochs=args.vae_epochs, batch_size=args.vae_batch_size)
 
     # Visualize cluster
-    encoding_cluster_plt = plot_label_clusters(args.output_filename, vae.encoder, x_train, y_train)
+    encoding_cluster_plt = plot_label_clusters(vae.encoder, x_train, y_train)
 
     # Train predictor
     predictor = load_vae_predictor(args.latent_dim)
+    # Prepared predictor training input
     predictor_size = int(len(x_train)/10)
     x_train_mean, x_train_sd, _ = vae.encoder.predict(x_train[0:predictor_size])
     x_train = np.concatenate((x_train_mean, x_train_sd), axis=1)
-    predictor.fit(x_train, y_train[0:predictor_size], epochs=30, batch_size=128)
+    predictor.fit(x_train, y_train[0:predictor_size], epochs=args.predictor_epochs,
+                  batch_size=args.predictor_batch_size)
 
     # Test model
     x_test_mean, x_test_sd, _ = vae.encoder.predict(x_test)
@@ -45,4 +46,4 @@ if __name__ == "__main__":
     test_results_10 = compute_metrics_standardized(np.asarray(predictions), y_test_10)
     print_results(test_results_10)
 
-    save_results(args.output_filename, test_results_10, plt, vae.encoder, predictor)
+    save_results(args.output_filename, test_results_10, encoding_cluster_plt, vae.encoder, predictor)
