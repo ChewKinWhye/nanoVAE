@@ -9,16 +9,21 @@ def create_directories(result_path):
         os.makedirs(result_path)
 
 
-def save_results(output_filename, results, encoder, predictor):
-    result_path = f'./results/{output_filename}'
+def save_results(output_filename, results, plt, encoder, predictor):
+    result_path = os.path.join("results", output_filename)
     create_directories(result_path)
-    encoder.save(f'{result_path}/encoder.h5')
-    predictor.save(f'{result_path}/predictor.h5')
+
+    encoder.save(os.path.join(result_path, "encoder.h5"))
+    predictor.save(os.path.join(result_path, "predictor.h5"))
+    
+    plt.savefig(os.path.join(result_path, "Encoding_dimension.png"))
+    
     result_json = {
-        "Best au_prc": round(results[0], 3),
-        "Best au_roc": round(results[3], 3),
-        "Best accuracy": round(results[6], 3),
-        "Best F-Measure": round(results[7], 3)}
+        "Accuracy": round(results[0], 3),
+        "Sensitivity": round(results[1], 3),
+        "Specificity": round(results[2], 3),
+        "Precision": round(results[3], 3),
+        "AU-ROC": round(results[4], 3)}
 
     with open(f'{result_path}/result.json', 'w+') as outfile:
         json.dump(result_json, outfile, indent=4)

@@ -36,7 +36,7 @@ def plot_label_clusters(filename, encoder, data, labels):
     plt.xlabel("z[0]")
     plt.ylabel("z[1]")
     plt.show()
-    plt.savefig(os.path.join("results", filename, "Encoding_dimension"))
+    return plt
 
 
 def plot_label_clusters_10(filename, encoder, data, labels):

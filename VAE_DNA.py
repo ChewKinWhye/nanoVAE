@@ -4,7 +4,7 @@ from utils.data import load_dna_data_vae, load_multiple_reads_data
 from utils.arguments import parse_args
 from utils.evaluate import compute_metrics_standardized, plot_label_clusters, print_results
 from utils.model import VaeDNA, load_vae_predictor
-
+from utils.save import save_results
 
 if __name__ == "__main__":
     args = parse_args()
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     vae.fit(x_train, epochs=100, batch_size=128)
 
     # Visualize cluster
-    plot_label_clusters(args.output_filename, vae.encoder, x_train, y_train)
+    encoding_cluster_plt = plot_label_clusters(args.output_filename, vae.encoder, x_train, y_train)
 
     # Train predictor
     predictor = load_vae_predictor(args.latent_dim)
@@ -44,3 +44,5 @@ if __name__ == "__main__":
         predictions.append(np.average(x_test_prediction))
     test_results_10 = compute_metrics_standardized(np.asarray(predictions), y_test_10)
     print_results(test_results_10)
+
+    save_results(args.output_filename, test_results_10, plt, vae.encoder, predictor)

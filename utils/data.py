@@ -176,6 +176,8 @@ def load_multiple_reads_data(args):
         read_tsv = csv.reader(tsv_file, delimiter="\t")
         data_count = 0
         for index, row in enumerate(read_tsv):
+            if index <= args.data_size / 2:
+                continue
             if data_count == total_size:
                 break
             if row[6][6:11] != 'ATCGA':
@@ -215,6 +217,7 @@ def load_multiple_reads_data(args):
         read_tsv = csv.reader(tsv_file, delimiter="\t")
         data_count = 0
         for index, row in enumerate(read_tsv):
+            if index <= args.data_size / 2:                                                                                             continue
             if data_count == total_size:
                 break
             if row[6][6:11] != 'ATCGA':
