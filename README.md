@@ -63,6 +63,7 @@ More training options
 
 ```
 Additional optional training parameters
+
   --data_path                 Path to data directory
   --output_filename           Name of the output file to save results
   --vae_epochs                Number of epochs to train VAE
