@@ -49,16 +49,28 @@ pip install -r requirements.txt
 ## Usage
 
 For DNA modifications
+
 ```sh
 python VAE_DNA.py --data_path /hdd/modifications/ecoli/deepsignal/ --data_size 500000 --output_filename VAE_DNA
 ```
 
 For RNA modifications
+
 ```sh
 python VAE_RNA.py --data_path /hdd/modifications/ecoli/deepsignal/ --data_size 900000 --output_filename VAE_RNA
 ```
+More training options
 
-ADD OTHER IMPORTANT HYPER-PARAMETERS
+```
+    --data_path                          path to data directory
+    --output_filename                    name of the output file to save results
+    --vae_epochs                         Number of epochs to train VAE
+    --vae_batch_size                     Batch size of VAE training
+    --predictor_epochs                   Number of epochs to train VAE
+    --predictor_batch_size               Batch size of predictor training
+    --latent_dim                         Latent dimension of VAE encoding space
+    --data_size                          Size of dataset to use
+```
 
 <!-- CONTACT -->
 ## Contact
