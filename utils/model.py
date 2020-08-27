@@ -141,6 +141,7 @@ def load_vae_predictor(latent_dim):
     predictor_output = layers.Dense(1, activation="sigmoid", kernel_initializer='random_normal',
                                     bias_initializer='zeros')(x)
     predictor = keras.Model(predictor_input, predictor_output, name="predictor")
-    predictor.compile(loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam())
+    predictor.compile(loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam(), 
+            metrics=[tf.keras.metrics.Accuracy()])
     predictor.summary()
     return predictor

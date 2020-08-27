@@ -1,4 +1,5 @@
 from tensorflow import keras
+import tensorflow as tf
 import numpy as np
 from utils.data import load_dna_data_vae, load_multiple_reads_data
 from utils.arguments import parse_args
@@ -15,6 +16,10 @@ if __name__ == "__main__":
     vae = VaeDNA(args.latent_dim)
     vae.compile(optimizer=keras.optimizers.Adam())
     vae.fit(x_train, epochs=args.vae_epochs, batch_size=args.vae_batch_size)
+    
+    # Check if VAE is trained properly
+    print(x_train[0:5, 24:44])
+    print(vae.decoder.predict(vae.encoder.predict(x_train[0:5, :]))[:, 24:44])
 
     # Visualize cluster
     encoding_cluster_plt = plot_label_clusters(vae.encoder, x_train, y_train)

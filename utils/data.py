@@ -29,7 +29,7 @@ def process_data(row):
     row_data.extend(row[7].split(","))
     row_data.extend(row[8].split(","))
     row_data.extend(row[9].split(","))
-    row_data.extend([float(i) * 10 for i in row[10].split(",")])
+    row_data.extend([float(i) * 15 for i in row[10].split(",")])
     row_data_float = [float(i) for i in row_data]
     return row_data_float
 
@@ -127,6 +127,7 @@ def load_dna_data_vae(data_size, data_path):
     train_x.extend(non_modified_data[0:train_size])
     train_x = np.asarray(train_x)
     train_y = np.append(np.ones(train_size), np.zeros(train_size))
+    train_x, train_y = shuffle(train_x, train_y, random_state=0)
 
     test_x = modified_data[train_size:train_size + test_size]
     test_x.extend(non_modified_data[train_size:train_size + test_size])
@@ -195,7 +196,7 @@ def load_multiple_reads_data(args):
             if row[3] not in modified_duplicate:
                 modified_duplicate[row[3]] = []
             row_data = process_data(row)
-            non_modified_duplicate[row[3]].append(row_data)
+            modified_duplicate[row[3]].append(row_data)
             data_count += 1
 
     # Find the ones with more than 10 reads
