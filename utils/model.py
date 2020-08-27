@@ -72,14 +72,15 @@ class VaeDNA(keras.Model):
 
 
 class VaeRNA(keras.Model):
-    def __init__(self, latent_dim, **kwargs):
+    def __init__(self, latent_dim, input_dim, **kwargs):
         super(VaeRNA, self).__init__(**kwargs)
         self.latent_dim = latent_dim
+        self.input_dim = input_dim
         self.encoder = self.load_encoder()
         self.decoder = self.load_decoder()
 
     def load_encoder(self):
-        encoder_inputs = keras.Input(shape=(8,))
+        encoder_inputs = keras.Input(shape=(self.input_dim,))
         x = layers.Dense(8, activation="relu", kernel_initializer='random_normal',
                          bias_initializer='zeros')(encoder_inputs)
         x = layers.Dense(8, activation="relu", kernel_initializer='random_normal',
@@ -99,13 +100,12 @@ class VaeRNA(keras.Model):
                          bias_initializer='zeros')(latent_inputs)
         x = layers.Dense(8, activation="relu", kernel_initializer='random_normal',
                          bias_initializer='zeros')(x)
-        x = layers.Dense(8, activation="relu", kernel_initializer='random_normal',
+        x = layers.Dense(self.input_dim, activation="relu", kernel_initializer='random_normal',
                          bias_initializer='zeros')(x)
-        decoder_outputs = layers.Reshape((8,))(x)
+        decoder_outputs = layers.Reshape((self.input_dim,))(x)
         decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
         decoder.summary()
         return decoder
-
 
     def train_step(self, data):
         # if isinstance(data, tuple):

@@ -4,6 +4,9 @@ import os
 import random
 from sklearn import preprocessing
 from sklearn.utils import shuffle
+import pandas as pd
+import imblearn
+from sklearn.model_selection import train_test_split
 
 
 def check_data(row):
@@ -32,6 +35,37 @@ def process_data(row):
     row_data.extend([float(i) * 15 for i in row[10].split(",")])
     row_data_float = [float(i) for i in row_data]
     return row_data_float
+
+
+def load_rna_data_vae_new(data_size, data_path):
+    train_size = int(data_size * 0.8)
+    test_size = int(data_size * 0.1)
+    file_path = os.path.join(data_path, "ecoli_MSssI_50mil_extracted_features.tsv")
+    df = pd.read_csv(file_path, sep='\t')
+    # Label by motif
+    # CpG
+    bool = []
+    for row in df.kmer:
+        if row[5] == "C" and row[6] == "G":
+            bool.append(True)
+        else:
+            bool.append(False)
+    df.loc[bool, 'y'] = 1
+    # non-CpG
+    df.loc[[not i for i in bool], 'y'] = 0
+    # Label proportions
+    rus = imblearn.under_sampling.RandomUnderSampler(random_state=66)
+    df, _ = rus.fit_resample(df, df.y)
+    df.y.value_counts()
+    print(df.y.value_counts())
+    X = df.drop(['y', 'chrom', 'kmer', 'ref_pos0'], axis=1).copy().to_numpy()
+    y = df.y.copy().to_numpy()
+    print(type(X[0][0]))
+    print(y[0])
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.5, random_state=40)
+
+    return x_train, y_train, x_test, y_test, x_val, y_val
 
 
 def load_rna_data_vae(data_size, data_path):
@@ -66,7 +100,6 @@ def load_rna_data_vae(data_size, data_path):
     min_max_scalar = preprocessing.MinMaxScaler()
     X = min_max_scalar.fit_transform(np.asarray(X))
     Y = np.asarray(Y)
-    print(X.shape)
     X, Y = shuffle(X, Y, random_state=0)
     x_train = X[0:train_size, :]
     y_train = Y[0:train_size]
@@ -75,6 +108,13 @@ def load_rna_data_vae(data_size, data_path):
 
     x_val = X[train_size + test_size:, :]
     y_val = Y[train_size + test_size:]
+
+    print(f"Train data shape: {x_train.shape}")
+    print(f"Train data labels shape: {y_train.shape}")
+    print(f"Test data shape: {x_test.shape}")
+    print(f"Test data labels shape: {y_test.shape}")
+    print(f"Validation data shape: {x_val.shape}")
+    print(f"Validation data labels shape: {y_val.shape}")
 
     return x_train, y_train, x_test, y_test, x_val, y_val
 

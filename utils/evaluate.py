@@ -56,10 +56,10 @@ def plot_label_clusters_10(filename, encoder, data, labels):
 
 
 def print_results(results):
-    accuracy_val, sensitivity_val, specificity_val, precision_val, au_roc_val, cm_val = results
-    print(f"\tAccuracy    : {accuracy_val:.3f}")
-    print(f"\tSensitivity : {sensitivity_val:.3f}")
-    print(f"\tSpecificity : {specificity_val:.3f}")
-    print(f"\tPrecision   : {precision_val:.3f}")
-    print(f"\tAUC         : {au_roc_val:.3f}")
-    print(f"{cm_val}")
+    accuracy, sensitivity, specificity, precision, au_roc, cm = results
+    print(f"\tAccuracy    : {accuracy:.3f}")
+    print(f"\tSensitivity : {sensitivity:.3f}")
+    print(f"\tSpecificity : {specificity:.3f}")
+    print(f"\tPrecision   : {precision:.3f}")
+    print(f"\tAUC         : {au_roc:.3f}")
+    print(f"{cm}")

@@ -1,6 +1,6 @@
 from tensorflow import keras
 import numpy as np
-from utils.data import load_rna_data_vae
+from utils.data import load_rna_data_vae_new
 from utils.arguments import parse_args
 from utils.evaluate import compute_metrics_standardized, plot_label_clusters, print_results
 from utils.model import VaeRNA, load_vae_predictor
@@ -8,10 +8,10 @@ from utils.save import save_results
 
 if __name__ == "__main__":
     args = parse_args()
-    x_train, y_train, x_test, y_test, x_val, y_val = load_rna_data_vae(args.data_size, args.data_path)
+    x_train, y_train, x_test, y_test, x_val, y_val = load_rna_data_vae_new(args.data_size, args.data_path)
 
     # Train encoder
-    vae = VaeRNA(args.latent_dim, x_train.shape[1])
+    vae = VaeRNA(args.latent_dim, input_dim=x_train.shape[1])
     vae.compile(optimizer=keras.optimizers.Adam())
     vae.fit(x_train, epochs=args.vae_epochs, batch_size=args.vae_batch_size)
 
@@ -32,4 +32,3 @@ if __name__ == "__main__":
     print_results(results)
     # Save model
     save_results(args.output_filename, results, plt, vae.encoder, predictor)
-
