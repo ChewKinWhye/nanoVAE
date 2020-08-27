@@ -51,13 +51,13 @@ pip install -r requirements.txt
 For DNA modifications
 
 ```sh
-python VAE_DNA.py --data_path /hdd/modifications/ecoli/deepsignal/ --data_size 500000 --output_filename VAE_DNA
+python VAE_DNA.py --data_path /hdd/modifications/ecoli/deepsignal/ --data_size 500000 --rc_loss_scale 1 --output_filename VAE_DNA
 ```
 
 For RNA modifications
 
 ```sh
-python VAE_RNA.py --data_path /hdd/modifications/ecoli/deepsignal/ --data_size 900000 --output_filename VAE_RNA
+python VAE_RNA.py --data_path /hdd/modifications/ecoli/deepsignal/ --data_size 900000 --rc_loss_scale 8 --output_filename VAE_RNA
 ```
 More training options
 
@@ -72,6 +72,7 @@ Additional optional training parameters
   --predictor_batch_size      Batch size of predictor training
   --latent_dim                Latent dimension of VAE encoding space
   --data_size                 Size of dataset to use
+  --rc_loss_scale             Scale value of the reconstruction error
 ```
 
 <!-- CONTACT -->
