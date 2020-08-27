@@ -41,7 +41,7 @@ def load_rna_data_vae_new(data_size, data_path):
     train_size = int(data_size * 0.8)
     test_size = int(data_size * 0.1)
     file_path = os.path.join(data_path, "ecoli_MSssI_50mil_extracted_features.tsv")
-    df = pd.read_csv(file_path, sep='\t')
+    df = pd.read_csv(file_path, sep='\t', error_bad_lines=False)
     # Label by motif
     # CpG
     bool = []

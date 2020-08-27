@@ -100,7 +100,7 @@ class VaeRNA(keras.Model):
                          bias_initializer='zeros')(latent_inputs)
         x = layers.Dense(8, activation="relu", kernel_initializer='random_normal',
                          bias_initializer='zeros')(x)
-        x = layers.Dense(self.input_dim, activation="relu", kernel_initializer='random_normal',
+        x = layers.Dense(self.input_dim, activation="linear", kernel_initializer='random_normal',
                          bias_initializer='zeros')(x)
         decoder_outputs = layers.Reshape((self.input_dim,))(x)
         decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
@@ -113,10 +113,11 @@ class VaeRNA(keras.Model):
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data)
             reconstruction = self.decoder(z)
-            reconstruction_loss = tf.reduce_mean(
-                keras.losses.binary_crossentropy(data, reconstruction)
-            )
-            reconstruction_loss *= 8
+            
+            mse = keras.losses.MeanSquaredError()
+            reconstruction_loss = tf.reduce_mean(mse(data, reconstruction))
+
+            reconstruction_loss *= 1
             kl_loss = 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
             kl_loss = tf.reduce_mean(kl_loss)
             kl_loss *= -0.5
