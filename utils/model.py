@@ -14,11 +14,12 @@ class Sampling(layers.Layer):
 
 
 class VaeDNA(keras.Model):
-    def __init__(self, latent_dim, **kwargs):
+    def __init__(self, latent_dim, rc_loss_scale, **kwargs):
         super(VaeDNA, self).__init__(**kwargs)
         self.latent_dim = latent_dim
         self.encoder = self.load_encoder()
         self.decoder = self.load_decoder()
+        self.rc_loss_scale = rc_loss_scale
 
     def load_encoder(self):
         encoder_inputs = keras.Input(shape=(479,))
@@ -57,7 +58,7 @@ class VaeDNA(keras.Model):
             reconstruction_loss = tf.reduce_mean(
                 mse(data, reconstruction)
             )
-            reconstruction_loss *= 1
+            reconstruction_loss *= self.rc_loss_scale
             kl_loss = 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
             kl_loss = tf.reduce_mean(kl_loss)
             kl_loss *= -0.5
@@ -72,10 +73,11 @@ class VaeDNA(keras.Model):
 
 
 class VaeRNA(keras.Model):
-    def __init__(self, latent_dim, input_dim, **kwargs):
+    def __init__(self, latent_dim, input_dim, rc_loss_scale, **kwargs):
         super(VaeRNA, self).__init__(**kwargs)
         self.latent_dim = latent_dim
         self.input_dim = input_dim
+        self.rc_loss_scale = rc_loss_scale
         self.encoder = self.load_encoder()
         self.decoder = self.load_decoder()
 
@@ -117,7 +119,7 @@ class VaeRNA(keras.Model):
             mse = keras.losses.MeanSquaredError()
             reconstruction_loss = tf.reduce_mean(mse(data, reconstruction))
 
-            reconstruction_loss *= 1
+            reconstruction_loss *= self.rc_loss_scale
             kl_loss = 1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var)
             kl_loss = tf.reduce_mean(kl_loss)
             kl_loss *= -0.5

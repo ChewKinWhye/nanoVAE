@@ -13,5 +13,6 @@ def parse_args():
     parser.add_argument('--predictor_batch_size', type=int, default=128, help='Batch size of predictor training')
     parser.add_argument('--latent_dim', type=int, default=20, help='Latent dimension of encoding space')
     parser.add_argument('--data_size', type=int, default=500000, help='size of dataset to use')
+    parser.add_argument('--RC_loss_scale', type=int, default=8, help='Scale factor of reconstruction loss')
     args = parser.parse_args()
     return args
