@@ -32,7 +32,7 @@ def process_data(row):
     row_data.extend(row[7].split(","))
     row_data.extend(row[8].split(","))
     row_data.extend(row[9].split(","))
-    row_data.extend([float(i) * 15 for i in row[10].split(",")])
+    row_data.extend([float(i) for i in row[10].split(",")])
     row_data_float = [float(i) for i in row_data]
     return row_data_float
 

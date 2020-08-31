@@ -16,10 +16,6 @@ if __name__ == "__main__":
     vae = VaeDNA(args.latent_dim, args.RC_loss_scale)
     vae.compile(optimizer=keras.optimizers.Adam())
     vae.fit(x_train, epochs=args.vae_epochs, batch_size=args.vae_batch_size)
-    
-    # Check if VAE is trained properly
-    print(x_train[0:5, 24:44])
-    print(vae.decoder.predict(vae.encoder.predict(x_train[0:5, :]))[:, 24:44])
 
     # Visualize cluster
     encoding_cluster_plt = plot_label_clusters(vae.encoder, x_train, y_train)

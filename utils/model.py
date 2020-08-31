@@ -110,8 +110,6 @@ class VaeRNA(keras.Model):
         return decoder
 
     def train_step(self, data):
-        # if isinstance(data, tuple):
-        #     data = data[0]
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data)
             reconstruction = self.decoder(z)
