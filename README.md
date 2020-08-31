@@ -12,7 +12,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Detections of modifications in our DNA is very important because blah blah blah.
+Detections of modifications in our DNA is very important because it affects how our DNA is being expressed.
 Supervised methods exists, but is unable to detect the modifications unknown during the labelling process.
 Therefore, we use take unsupervised approach, Variational Autoencoders, to this problem to help us overcome the limitations of data labelling.
 
