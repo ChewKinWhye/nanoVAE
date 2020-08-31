@@ -10,25 +10,23 @@ from random import uniform
 if __name__ == "__main__":
     args = parse_args()
     x_train, y_train, x_test, y_test, _, _ = load_dna_data_vae(args.data_size, args.data_path)
-    trials = 100
+    trials = 1000
     best_accuracy = float("-inf")
     # 479
-    for i in range(100):
+    for mean_scale in range(1, 10):
         # Train VAE
         mean_scale, std_scale = uniform(1, 10.0), uniform(1, 10.0)
         len_scale, signal_scale = uniform(1, 10.0), uniform(1, 10.0)
-        x_train_scaled = np.concatenate((x_train[:, 68:85]*mean_scale, x_train[:, 85:102]*std_scale,
+        x_train_scaled = np.concatenate((x_train[:, 0:68], x_train[:, 68:85]*mean_scale, x_train[:, 85:102]*std_scale,
                                          x_train[:, 102:119]*len_scale, x_train[:, 119:]*signal_scale), axis=1)
-        x_test_scaled = np.concatenate((x_test[:, 68:85] * mean_scale, x_test[:, 85:102] * std_scale,
+        x_test_scaled = np.concatenate((x_test[:, 0:68], x_test[:, 68:85] * mean_scale, x_test[:, 85:102] * std_scale,
                                         x_test[:, 102:119] * len_scale, x_test[:, 119:] * signal_scale), axis=1)
 
-        vae = VaeDNA(args.latent_dim, args.RC_loss_scale)
+        vae = VaeDNA(args.latent_dim, args.rc_loss_scale)
         vae.compile(optimizer=keras.optimizers.Adam())
-        vae.fit(x_train_scaled, epochs=args.vae_epochs, batch_size=args.vae_batch_size)
+        vae.fit(x_train_scaled, epochs=args.vae_epochs, batch_size=args.vae_batch_size, verbose=0)
 
         # Visualize cluster
-        encoding_cluster_plt = plot_label_clusters(vae.encoder, x_train, y_train)
-
         # Train predictor
         predictor = load_vae_predictor(args.latent_dim)
         # Prepared predictor training input
@@ -36,7 +34,7 @@ if __name__ == "__main__":
         x_train_mean, x_train_sd, _ = vae.encoder.predict(x_train_scaled[0:predictor_size])
         x_train_predictor = np.concatenate((x_train_mean, x_train_sd), axis=1)
         predictor.fit(x_train_predictor, y_train[0:predictor_size], epochs=args.predictor_epochs,
-                      batch_size=args.predictor_batch_size)
+                      batch_size=args.predictor_batch_size, verbose=0)
 
         # Test model
         x_test_mean, x_test_sd, _ = vae.encoder.predict(x_test_scaled)

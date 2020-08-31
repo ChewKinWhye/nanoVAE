@@ -13,7 +13,7 @@ if __name__ == "__main__":
     x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_size, args.data_path)
 
     # Train VAE
-    vae = VaeDNA(args.latent_dim, args.RC_loss_scale)
+    vae = VaeDNA(args.latent_dim, args.rc_loss_scale)
     vae.compile(optimizer=keras.optimizers.Adam())
     vae.fit(x_train, epochs=args.vae_epochs, batch_size=args.vae_batch_size)
 

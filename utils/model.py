@@ -32,7 +32,7 @@ class VaeDNA(keras.Model):
         z_log_var = layers.Dense(self.latent_dim, name="z_log_var")(x)
         z = Sampling()([z_mean, z_log_var])
         encoder = keras.Model(encoder_inputs, [z_mean, z_log_var, z], name="encoder")
-        encoder.summary()
+        #encoder.summary()
         return encoder
 
     def load_decoder(self):
@@ -45,7 +45,7 @@ class VaeDNA(keras.Model):
         x = layers.Dense(479, activation="linear")(x)
         decoder_outputs = layers.Reshape((479,))(x)
         decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
-        decoder.summary()
+        #decoder.summary()
         return decoder
 
     def train_step(self, data):
@@ -93,7 +93,7 @@ class VaeRNA(keras.Model):
         z_log_var = layers.Dense(self.latent_dim, name="z_log_var")(x)
         z = Sampling()([z_mean, z_log_var])
         encoder = keras.Model(encoder_inputs, [z_mean, z_log_var, z], name="encoder")
-        encoder.summary()
+        #encoder.summary()
         return encoder
 
     def load_decoder(self):
@@ -106,7 +106,7 @@ class VaeRNA(keras.Model):
                          bias_initializer='zeros')(x)
         decoder_outputs = layers.Reshape((self.input_dim,))(x)
         decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
-        decoder.summary()
+        #decoder.summary()
         return decoder
 
     def train_step(self, data):
@@ -144,5 +144,5 @@ def load_vae_predictor(latent_dim):
     predictor = keras.Model(predictor_input, predictor_output, name="predictor")
     predictor.compile(loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam(), 
             metrics=[tf.keras.metrics.Accuracy()])
-    predictor.summary()
+    #predictor.summary()
     return predictor
