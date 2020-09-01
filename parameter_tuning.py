@@ -11,16 +11,16 @@ if __name__ == "__main__":
     args = parse_args()
     x_train, y_train, x_test, y_test, _, _ = load_dna_data_vae(args.data_size, args.data_path)
     best_accuracy = float("-inf")
-    for mean_scale in range(1, 10):
+    for rc_scale in range(1, 10):
         for std_scale in range(1, 10):
             for len_scale in range(1, 10):
                 for signal_scale in range(5, 15):
-                    x_train_scaled = np.concatenate((x_train[:, 0:68], x_train[:, 68:85]*mean_scale, x_train[:, 85:102]*std_scale,
+                    x_train_scaled = np.concatenate((x_train[:, 0:68], x_train[:, 68:85], x_train[:, 85:102]*std_scale,
                                                      x_train[:, 102:119]*len_scale, x_train[:, 119:]*signal_scale), axis=1)
-                    x_test_scaled = np.concatenate((x_test[:, 0:68], x_test[:, 68:85] * mean_scale, x_test[:, 85:102] * std_scale,
+                    x_test_scaled = np.concatenate((x_test[:, 0:68], x_test[:, 68:85], x_test[:, 85:102] * std_scale,
                                                     x_test[:, 102:119] * len_scale, x_test[:, 119:] * signal_scale), axis=1)
 
-                    vae = VaeDNA(args.latent_dim, args.rc_loss_scale)
+                    vae = VaeDNA(args.latent_dim, rc_scale)
                     vae.compile(optimizer=keras.optimizers.Adam())
                     vae.fit(x_train_scaled, epochs=args.vae_epochs, batch_size=args.vae_batch_size, verbose=0)
 
@@ -41,6 +41,9 @@ if __name__ == "__main__":
                     test_results = compute_metrics_standardized(predictions, y_test)
                     if test_results[0] > best_accuracy:
                         best_accuracy = test_results[0]
-                        print("---------------")
-                        print(mean_scale, std_scale, len_scale, signal_scale)
-                        print(test_results[0])
+                        best_params = (rc_scale, std_scale, len_scale, signal_scale)
+                    print("---------------")
+                    print(rc_scale, std_scale, len_scale, signal_scale)
+                    print(test_results[0])
+    print(best_params)
+    print(best_accuracy)
