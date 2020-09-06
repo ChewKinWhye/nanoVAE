@@ -11,7 +11,7 @@ if __name__ == "__main__":
     args = parse_args()
     x_train, y_train, x_test, y_test, _, _ = load_dna_data_vae(args.data_size, args.data_path)
     best_accuracy = float("-inf")
-    num_experiments = 10
+    num_experiments = 10000
     for i in range(num_experiments):
         rc_scale = uniform(1, 10)
         mean_scale = uniform(1, 10)
@@ -19,9 +19,9 @@ if __name__ == "__main__":
         len_scale = uniform(1, 10)
         signal_scale = uniform(10, 20)
 
-        x_train_scaled = np.concatenate((x_train[:, 0:68], x_train[:, 68:85], x_train[:, 85:102]*std_scale,
+        x_train_scaled = np.concatenate((x_train[:, 0:68], x_train[:, 68:85]*mean_scale, x_train[:, 85:102]*std_scale,
                                          x_train[:, 102:119]*len_scale, x_train[:, 119:]*signal_scale), axis=1)
-        x_test_scaled = np.concatenate((x_test[:, 0:68], x_test[:, 68:85], x_test[:, 85:102] * std_scale,
+        x_test_scaled = np.concatenate((x_test[:, 0:68], x_test[:, 68:85]*mean_scale, x_test[:, 85:102] * std_scale,
                                         x_test[:, 102:119] * len_scale, x_test[:, 119:] * signal_scale), axis=1)
 
         vae = VaeDNA(args.latent_dim, rc_scale)
