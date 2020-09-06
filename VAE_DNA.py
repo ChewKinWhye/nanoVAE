@@ -6,6 +6,8 @@ from utils.arguments import parse_args
 from utils.evaluate import compute_metrics_standardized, plot_label_clusters, print_results
 from utils.model import VaeDNA, load_vae_predictor
 from utils.save import save_results
+from keras.callbacks import EarlyStopping
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -15,7 +17,8 @@ if __name__ == "__main__":
     # Train VAE
     vae = VaeDNA(args.latent_dim, args.rc_loss_scale)
     vae.compile(optimizer=keras.optimizers.Adam())
-    vae.fit(x_train, epochs=args.vae_epochs, batch_size=args.vae_batch_size)
+    es = EarlyStopping(monitor='val_loss', patience=15)
+    vae.fit(x_train, validation_split=0.2, epochs=args.vae_epochs, batch_size=args.vae_batch_size, callbacks=[es])
 
     # Visualize cluster
     encoding_cluster_plt = plot_label_clusters(vae.encoder, x_train, y_train)
