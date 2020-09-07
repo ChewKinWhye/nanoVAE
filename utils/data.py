@@ -29,9 +29,9 @@ def process_data(row):
     row_data = []
     for i in row[6]:
         row_data.extend(dna_lookup[i])
-    row_data.extend(row[7].split(","))
-    row_data.extend(row[8].split(","))
-    row_data.extend(row[9].split(","))
+    row_data.extend([float(i) for i in row[7].split(",")])
+    row_data.extend([float(i) for i in row[8].split(",")])
+    row_data.extend([float(i) for i in row[9].split(",")])
     row_data.extend([float(i) for i in row[10].split(",")])
     row_data_float = [float(i) for i in row_data]
     return row_data_float

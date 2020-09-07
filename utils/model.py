@@ -71,7 +71,6 @@ class VaeDNA(keras.Model):
             "kl_loss": kl_loss,
         }
 
-
 class VaeRNA(keras.Model):
     def __init__(self, latent_dim, input_dim, rc_loss_scale, **kwargs):
         super(VaeRNA, self).__init__(**kwargs)
