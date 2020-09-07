@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras.layers import Lambda
 from tensorflow.keras import backend as K
 from tensorflow.keras.losses import mse
 
@@ -23,7 +24,7 @@ def load_vae_dna_model(latent_dim, rc_loss_scale):
     x = layers.Dense(32, activation="relu")(x)
     z_mean = layers.Dense(latent_dim, name="z_mean")(x)
     z_log_var = layers.Dense(latent_dim, name="z_log_var")(x)
-    z = keras.Lambda(sampling, output_shape=(latent_dim,), name='z')([z_mean, z_log_var])
+    z = Lambda(sampling, output_shape=(latent_dim,), name='z')([z_mean, z_log_var])
     encoder = keras.Model(encoder_inputs, [z_mean, z_log_var, z], name="encoder")
     # Build decoder
     latent_inputs = keras.Input(shape=(latent_dim,))

@@ -15,35 +15,35 @@ if __name__ == "__main__":
     x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_size, args.data_path)
     # Train VAE
     # vae = VaeDNA(args.latent_dim, args.rc_loss_scale)
-    encoder, decoder, vae = load_vae_dna_model()
+    encoder, decoder, vae = load_vae_dna_model(args.latent_dim, args.rc_loss_scale)
     vae.compile(optimizer=keras.optimizers.Adam())
     vae.fit(x_train, epochs=args.vae_epochs, batch_size=args.vae_batch_size, verbose=2)
 
     # Visualize cluster
-    encoding_cluster_plt = plot_label_clusters(vae.encoder, x_train, y_train)
+    encoding_cluster_plt = plot_label_clusters(encoder, x_train, y_train)
 
     # Train predictor
     predictor = load_vae_predictor(args.latent_dim)
     # Prepared predictor training input
     predictor_size = int(len(x_train)/10)
-    x_train_mean, x_train_sd, _ = vae.encoder.predict(x_train[0:predictor_size])
+    x_train_mean, x_train_sd, _ = encoder.predict(x_train[0:predictor_size])
     x_train = np.concatenate((x_train_mean, x_train_sd), axis=1)
     predictor.fit(x_train, y_train[0:predictor_size], epochs=args.predictor_epochs,
                   batch_size=args.predictor_batch_size)
 
     # Test model
-    x_test_mean, x_test_sd, _ = vae.encoder.predict(x_test)
+    x_test_mean, x_test_sd, _ = encoder.predict(x_test)
     x_test = np.concatenate((x_test_mean, x_test_sd), axis=1)
     predictions = predictor.predict(x_test)
     test_results = compute_metrics_standardized(predictions, y_test)
     print_results(test_results)
 
-    save_results(args.output_filename, test_results, encoding_cluster_plt, vae.encoder, predictor)
+    save_results(args.output_filename, test_results, encoding_cluster_plt, encoder, predictor)
     # Test model with multiple reads
     x_test_10, y_test_10 = load_multiple_reads_data(args)
     predictions = []
     for x in x_test_10:
-        x_test_mean, x_test_sd, _ = vae.encoder.predict(x)
+        x_test_mean, x_test_sd, _ = encoder.predict(x)
         x_test_predictor = np.concatenate((x_test_mean, x_test_sd), axis=1)
         x_test_prediction = predictor.predict(x_test_predictor)
         predictions.append(np.average(x_test_prediction))
