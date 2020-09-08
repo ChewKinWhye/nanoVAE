@@ -33,7 +33,7 @@ def objective(params):
                       batch_size=args.predictor_batch_size, callbacks=[es], verbose=0)
 
         # Test model
-        x_test_mean, x_test_sd, _ = vae.encoder.predict(x_test_scaled)
+        x_test_mean, x_test_sd, _ = encoder.predict(x_test_scaled)
         x_test_pred = np.concatenate((x_test_mean, x_test_sd), axis=1)
         predictions = predictor.predict(x_test_pred)
         test_results = compute_metrics_standardized(predictions, y_test)
@@ -49,7 +49,7 @@ space = {
     'std_scale': hp.uniform('std_scale', 0, 20),
     'len_scale': hp.uniform('len_scale', 1, 3),
     'signal_scale': hp.uniform('signal_scale', 15, 30),
-    'latent_dim': hp.quniform('latent_dim', 0, 100)1
+    'latent_dim': hp.quniform('latent_dim', 0, 100)
     }
 bayes_trials = Trials()
 best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=50, trials=bayes_trials)
