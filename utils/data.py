@@ -2,11 +2,7 @@ import numpy as np
 import csv
 import os
 import random
-from sklearn import preprocessing
 from sklearn.utils import shuffle
-import pandas as pd
-import imblearn
-from sklearn.model_selection import train_test_split
 
 
 def check_data(row):
@@ -24,102 +20,20 @@ def check_data(row):
     return True
 
 
-def process_data(row):
+def process_data(row, feature_scale):
     dna_lookup = {"A": [0, 0, 0, 1], "T": [0, 0, 1, 0], "G": [0, 1, 0, 0], "C": [1, 0, 0, 0]}
     row_data = []
     for i in row[6]:
-        row_data.extend(dna_lookup[i])
-    row_data.extend([float(i) for i in row[7].split(",")])
-    row_data.extend([float(i) for i in row[8].split(",")])
-    row_data.extend([float(i) for i in row[9].split(",")])
-    row_data.extend([float(i)*10 for i in row[10].split(",")])
+        row_data.extend([j * feature_scale[0] for j in dna_lookup[i]])
+    row_data.extend([float(i)*feature_scale[1] for i in row[7].split(",")])
+    row_data.extend([float(i)*feature_scale[2] for i in row[8].split(",")])
+    row_data.extend([float(i)*feature_scale[3] for i in row[9].split(",")])
+    row_data.extend([float(i)*feature_scale[4] for i in row[10].split(",")])
     row_data_float = [float(i) for i in row_data]
     return row_data_float
 
 
-def load_rna_data_vae_new(data_size, data_path):
-    train_size = int(data_size * 0.8)
-    test_size = int(data_size * 0.1)
-    file_path = os.path.join(data_path, "ecoli_MSssI_50mil_extracted_features.tsv")
-    df = pd.read_csv(file_path, sep='\t', error_bad_lines=False)
-    # Label by motif
-    # CpG
-    bool = []
-    for row in df.kmer:
-        if row[5] == "C" and row[6] == "G":
-            bool.append(True)
-        else:
-            bool.append(False)
-    df.loc[bool, 'y'] = 1
-    # non-CpG
-    df.loc[[not i for i in bool], 'y'] = 0
-    # Label proportions
-    rus = imblearn.under_sampling.RandomUnderSampler(random_state=66)
-    df, _ = rus.fit_resample(df, df.y)
-    df.y.value_counts()
-    print(df.y.value_counts())
-    X = df.drop(['y', 'chrom', 'kmer', 'ref_pos0'], axis=1).copy().to_numpy()
-    y = df.y.copy().to_numpy()
-    print(type(X[0][0]))
-    print(y[0])
-    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.5, random_state=40)
-
-    return x_train, y_train, x_test, y_test, x_val, y_val
-
-
-def load_rna_data_vae(data_size, data_path):
-    train_size = int(data_size * 0.8)
-    test_size = int(data_size * 0.1)
-    file_path_normal = os.path.join(data_path, "ecoli_MSssI_50mil_coverage10_readqual_extracted.tsv")
-    file_path_modified = os.path.join(data_path, "ecoli_pcr_50mil_coverage10_readqual_extracted.tsv")
-    X = []
-    Y = []
-    with open(file_path_normal) as tsv_file:
-        read_tsv = csv.reader(tsv_file, delimiter="\t")
-        for i, row in enumerate(read_tsv):
-            if i == 0:
-                continue
-            if i == int(data_size/2) + 1:
-                break
-            Y.append(int(0))
-            row_float = [float(x) for x in row[3:]]
-            X.append(row_float)
-
-    with open(file_path_modified) as tsv_file:
-        read_tsv = csv.reader(tsv_file, delimiter="\t")
-        for i, row in enumerate(read_tsv):
-            if i == 0:
-                continue
-            if i == int(data_size/2) + 1:
-                break
-            Y.append(int(1))
-            row_float = [float(x) for x in row[3:]]
-            X.append(row_float)
-    # Normalize between 0 and 1
-    min_max_scalar = preprocessing.MinMaxScaler()
-    X = min_max_scalar.fit_transform(np.asarray(X))
-    Y = np.asarray(Y)
-    X, Y = shuffle(X, Y, random_state=0)
-    x_train = X[0:train_size, :]
-    y_train = Y[0:train_size]
-    x_test = X[train_size: train_size + test_size, :]
-    y_test = Y[train_size: train_size + test_size]
-
-    x_val = X[train_size + test_size:, :]
-    y_val = Y[train_size + test_size:]
-
-    print(f"Train data shape: {x_train.shape}")
-    print(f"Train data labels shape: {y_train.shape}")
-    print(f"Test data shape: {x_test.shape}")
-    print(f"Test data labels shape: {y_test.shape}")
-    print(f"Validation data shape: {x_val.shape}")
-    print(f"Validation data labels shape: {y_val.shape}")
-
-    return x_train, y_train, x_test, y_test, x_val, y_val
-
-
-def load_dna_data_vae(data_size, data_path):
+def load_dna_data_vae(data_size, data_path, feature_scale):
     # Global parameters
     train_size = int(data_size * 0.8 / 2)
     test_size = int(data_size * 0.1 / 2)
@@ -139,7 +53,7 @@ def load_dna_data_vae(data_size, data_path):
             if check_data(row) is False:
                 outlier_counter += 1
                 continue
-            row_data = process_data(row)
+            row_data = process_data(row, feature_scale)
             non_modified_data.append(row_data)
             data_count += 1
 
@@ -154,7 +68,7 @@ def load_dna_data_vae(data_size, data_path):
             if check_data(row) is False:
                 outlier_counter += 1
                 continue
-            row_data = process_data(row)
+            row_data = process_data(row, feature_scale)
             modified_data.append(row_data)
             data_count += 1
 
@@ -245,6 +159,5 @@ def load_multiple_reads_data(args):
             test_x.append(modified_duplicate[x][0:10])
     test_x = test_x[0:2 * test_size]
     test_x = np.asarray(test_x)
-    print(test_x.shape)
     test_y = np.append(np.zeros(test_size), np.ones(test_size))
     return test_x, test_y
