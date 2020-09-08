@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     save_results(args.output_filename, test_results, encoding_cluster_plt, encoder, predictor)
     # Test model with multiple reads
-    x_test_10, y_test_10 = load_multiple_reads_data(args)
+    x_test_10, y_test_10 = load_multiple_reads_data(args.data_size, args.data_path, args.feature_scale)
     predictions = []
     for x in x_test_10:
         x_test_mean, x_test_sd, _ = encoder.predict(x)

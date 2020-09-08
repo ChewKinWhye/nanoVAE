@@ -103,12 +103,12 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
     return train_x, train_y.astype(int), test_x, test_y.astype(int), val_x, val_y.astype(int)
 
 
-def load_multiple_reads_data(args):
+def load_multiple_reads_data(data_size, data_path, feature_scale):
     test_size = 2500
     total_size = 2000000
     # Global parameters
-    file_path_normal = os.path.join(args.data_path, "pcr.tsv")
-    file_path_modified = os.path.join(args.data_path, "msssi.tsv")
+    file_path_normal = os.path.join(data_path, "pcr.tsv")
+    file_path_modified = os.path.join(data_path, "msssi.tsv")
 
     non_modified_duplicate = {}
     test_x = []
@@ -118,14 +118,14 @@ def load_multiple_reads_data(args):
         data_count = 0
         for index, row in enumerate(read_tsv):
             # Ignore the first x data points used for training, and check data
-            if index <= args.data_size / 2 or check_data(row) is False:
+            if index <= data_size / 2 or check_data(row) is False:
                 continue
             if data_count == total_size:
                 break
             if row[3] not in non_modified_duplicate:
                 non_modified_duplicate[row[3]] = []
             # Append data
-            row_data = process_data(row)
+            row_data = process_data(row, feature_scale)
             non_modified_duplicate[row[3]].append(row_data)
             data_count += 1
 
@@ -143,13 +143,13 @@ def load_multiple_reads_data(args):
         data_count = 0
         for index, row in enumerate(read_tsv):
             # Ignore the first x data points used for training, and check data
-            if index <= args.data_size / 2 or check_data(row) is False:
+            if index <= data_size / 2 or check_data(row) is False:
                 continue
             if data_count == total_size:
                 break
             if row[3] not in modified_duplicate:
                 modified_duplicate[row[3]] = []
-            row_data = process_data(row)
+            row_data = process_data(row, feature_scale)
             modified_duplicate[row[3]].append(row_data)
             data_count += 1
 
