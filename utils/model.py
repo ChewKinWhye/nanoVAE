@@ -18,28 +18,30 @@ def sampling(args):
 def load_vae_dna_model(latent_dim, rc_loss_scale):
     # Build encoder
     encoder_inputs = keras.Input(shape=(479,))
-    x = layers.Dense(256, activation="relu")(encoder_inputs)
+    x = layers.Dense(512, activation="relu")(encoder_inputs)
     x = layers.Dense(256, activation="relu")(x)
-    x = layers.Dense(128, activation="relu")(x)
-    x = layers.Dense(64, activation="relu")(x)
-    x = layers.Dense(32, activation="relu")(x)
+    x = layers.Dense(256, activation="relu")(x)
+    x = layers.Dense(256, activation="relu")(x)
     z_mean = layers.Dense(latent_dim, name="z_mean")(x)
     z_log_var = layers.Dense(latent_dim, name="z_log_var")(x)
+    z_mean_var = layers.Concatenate()([z_mean, z_log_var])
+    z_mean_var = Lambda(lambda x: tf.math.l2_normalize(x, axis=1))(z_mean_var)
+    z_mean = Lambda(lambda x: x[:, 0:latent_dim])(z_mean_var)
+    z_log_var = Lambda(lambda x: x[:, latent_dim:])(z_mean_var)
+
     z = Lambda(sampling, output_shape=(latent_dim,), name='z')([z_mean, z_log_var])
     encoder = keras.Model(encoder_inputs, [z_mean, z_log_var, z], name="encoder")
     # Build decoder
     latent_inputs = keras.Input(shape=(latent_dim,))
-    x = layers.Dense(32, activation="relu")(latent_inputs)
-    x = layers.Dense(64, activation="relu")(x)
-    x = layers.Dense(128, activation="relu")(x)
+    x = layers.Dense(256, activation="relu")(latent_inputs)
     x = layers.Dense(256, activation="relu")(x)
     x = layers.Dense(256, activation="relu")(x)
+    x = layers.Dense(512, activation="relu")(x)
     x = layers.Dense(479, activation="linear")(x)
     decoder_outputs = layers.Reshape((479,))(x)
     decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
     outputs = decoder(encoder(encoder_inputs)[2])
     vae = keras.Model(encoder_inputs, outputs, name='vae_mlp')
-
     reconstruction_loss = mse(encoder_inputs, outputs)
     reconstruction_loss *= rc_loss_scale
     kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
