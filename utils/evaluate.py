@@ -29,7 +29,7 @@ def plot_label_clusters(encoder, data, labels):
     filter_indices = random.sample(range(0, data.shape[0]-1), 3000)
     data_sample = np.take(data, filter_indices, axis=0)
     label_sample = np.take(labels, filter_indices, axis=0)
-    z_mean, _, _ = encoder.predict(data_sample)
+    z_mean = encoder.predict(data_sample)
     plt.figure(figsize=(12, 10))
     plt.scatter(z_mean[:, 0], z_mean[:, 1], c=label_sample, s=0.5)
     plt.colorbar()
