@@ -25,16 +25,15 @@ def objective(params):
 
         predictor = load_vae_predictor(int(params['latent_dim']))
         # Prepared predictor training input
-        x_train_mean, x_train_sd, _ = encoder.predict(x_train_scaled[0:supervised_size])
-        x_train_pred = np.concatenate((x_train_mean, x_train_sd), axis=1)
+        x_train_predictor = encoder.predict(x_train_scaled[0:supervised_size])
+
         es = EarlyStopping(monitor='val_loss', mode='min', patience=10)
-        predictor.fit(x_train_pred, y_train[0:supervised_size], epochs=args.predictor_epochs, validation_split=0.2,
+        predictor.fit(x_train_predictor, y_train[0:supervised_size], epochs=args.predictor_epochs, validation_split=0.2,
                       batch_size=args.predictor_batch_size, callbacks=[es], verbose=0)
 
         # Test model
-        x_test_mean, x_test_sd, _ = encoder.predict(x_test_scaled)
-        x_test_pred = np.concatenate((x_test_mean, x_test_sd), axis=1)
-        predictions = predictor.predict(x_test_pred)
+        x_test_predictor = encoder.predict(x_test_scaled)
+        predictions = predictor.predict(x_test_predictor)
         test_results = compute_metrics_standardized(predictions, y_test)
         print_results(test_results)
         return test_results[0] * -1

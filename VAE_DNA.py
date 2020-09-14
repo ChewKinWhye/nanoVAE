@@ -11,7 +11,6 @@ import tensorflow_addons as tfa
 
 
 if __name__ == "__main__":
-    print("Starting")
     args = parse_args()
     supervised_size = 10000
     NAME = f"VAE_DNA-{int(time.time())}"
