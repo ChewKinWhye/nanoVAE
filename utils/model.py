@@ -54,6 +54,68 @@ def load_vae_dna_model(latent_dim, rc_loss_scale, vae_lr):
     return encoder, decoder, vae
 
 
+def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
+    # Build encoder
+    encoder_inputs = keras.Input(shape=(479,))
+    base = Lambda(lambda y: y[:, 0:68])(encoder_inputs)
+    base = layers.Reshape((17, 4))(base)
+    base = layers.Permute((2, 1))(base)
+    features = Lambda(lambda y: y[:, 68:119])(encoder_inputs)
+    features = layers.Reshape((3, 17))(features)
+    top_module = layers.Concatenate(axis=1)([base, features])
+    x = layers.Bidirectional(layers.LSTM(50))(top_module)
+    x = layers.Reshape((100, 1))(x)
+    top_out = layers.Bidirectional(layers.LSTM(50))(x)
+
+    bottom_module = Lambda(lambda y: y[:, 119:])(encoder_inputs)
+    x = layers.Reshape((1, 360, 1))(bottom_module)
+    x = layers.Conv2D(filters=32, kernel_size=(1, 7), strides=2)(x)
+    # Add in inception layers
+    x = layers.AveragePooling2D(pool_size=(1, 7), strides=5)(x)
+    x = layers.AveragePooling2D(pool_size=(1, 5), strides=3)(x)
+    bottom_out = layers.Reshape((-1,))(x)
+    # Classification module which combines top and bottom outputs using FFNN
+    x = layers.Concatenate(axis=1)([top_out, bottom_out])
+    z_mean = layers.Dense(latent_dim, name="z_mean")(x)
+    z_log_var = layers.Dense(latent_dim, name="z_log_var")(x)
+    z_mean_var = layers.Concatenate()([z_mean, z_log_var])
+    encoder = keras.Model(encoder_inputs, z_mean_var, name="encoder")
+
+    # Build decoder
+    latent_inputs = keras.Input(shape=(latent_dim*2,))
+    x_mean = Lambda(lambda y: y[:, 0:latent_dim])(latent_inputs)
+    x_log_var = Lambda(lambda y: y[:, latent_dim:])(latent_inputs)
+    x = Lambda(sampling, output_shape=(latent_dim,), name='z')([x_mean, x_log_var])
+
+    top_module = Lambda(lambda y: y[:, 0:int(latent_dim/2)])(x)
+    x = layers.Reshape((50, 1))(top_module)
+    x = layers.Bidirectional(layers.LSTM(8))(x)
+    top_out = layers.Dense(117)(x)
+
+    bottom_module = Lambda(lambda x: x[:, int(latent_dim/2):])(x)
+    x = layers.Reshape((1, 50, 1))(bottom_module)
+    x = layers.Conv2D(filters=32, kernel_size=(1, 7), strides=2)(x)
+    x = layers.AveragePooling2D(pool_size=(1, 7), strides=5)(x)
+    x = layers.AveragePooling2D(pool_size=(1, 5), strides=3)(x)
+    x = layers.Reshape((-1,))(x)
+    bottom_out = layers.Dense(360, activation='sigmoid')(x)
+    decoder_outputs = layers.Concatenate(axis=1)([top_out, bottom_out])
+    decoder_outputs = layers.Reshape((479,))(decoder_outputs)
+    decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
+
+    outputs = decoder(encoder(encoder_inputs))
+    vae = keras.Model(encoder_inputs, outputs, name='vae_mlp')
+    reconstruction_loss = mse(encoder_inputs, outputs)
+    reconstruction_loss *= rc_loss_scale
+    kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
+    kl_loss = K.sum(kl_loss, axis=-1)
+    kl_loss *= -0.5
+    vae_loss = K.mean(reconstruction_loss + kl_loss)
+    vae.add_loss(vae_loss)
+    vae.compile(optimizer=Adam(learning_rate=vae_lr, clipnorm=1.0))
+    return encoder, decoder, vae
+
+
 def load_vae_predictor(latent_dim):
     predictor_input = keras.Input(shape=(latent_dim * 2,))
     x = layers.Dense(8, activation="relu", kernel_initializer='random_normal',
