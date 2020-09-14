@@ -4,6 +4,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.layers import Lambda
 from tensorflow.keras import backend as K
 from tensorflow.keras.losses import mse
+from tensorflow.keras.optimizers import Adam
 
 
 def sampling(args):
@@ -15,7 +16,7 @@ def sampling(args):
     return z_mean + K.exp(0.5 * z_log_var) * epsilon
 
 
-def load_vae_dna_model(latent_dim, rc_loss_scale):
+def load_vae_dna_model(latent_dim, rc_loss_scale, vae_lr):
     # Build encoder
     encoder_inputs = keras.Input(shape=(479,))
     x = layers.Dense(512, activation="relu")(encoder_inputs)
@@ -49,7 +50,7 @@ def load_vae_dna_model(latent_dim, rc_loss_scale):
     kl_loss *= -0.5
     vae_loss = K.mean(reconstruction_loss + kl_loss)
     vae.add_loss(vae_loss)
-    vae.compile(optimizer='adam')
+    vae.compile(optimizer=Adam(learning_rate=vae_lr, clipnorm=1.0))
     return encoder, decoder, vae
 
 

@@ -17,12 +17,11 @@ x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_siz
 def objective(params):
     x_train_scaled = np.concatenate((x_train[:, 0:68]*params['kmer_scale'], x_train[:, 68:85]*params['mean_scale'], x_train[:, 85:102]*params['std_scale'], x_train[:, 102:119]*params['len_scale'], x_train[:, 119:]*params['signal_scale']), axis=1)
     x_test_scaled = np.concatenate((x_test[:, 0:68]*params['kmer_scale'], x_test[:, 68:85]*params['mean_scale'], x_test[:, 85:102]*params['std_scale'], x_test[:, 102:119]*params['len_scale'], x_test[:, 119:]*params['signal_scale']), axis=1)
-    encoder, decoder, vae = load_vae_dna_model(int(params['latent_dim']), params['rc_scale'])
+    encoder, decoder, vae = load_vae_dna_model(int(params['latent_dim']), params['rc_scale'], params['vae_lr'])
     try:
         supervised_size = 10000
         es = EarlyStopping(monitor='val_loss', mode='min', patience=20)
-        vae.fit(x_train_scaled[0:int(len(x_train) * 0.8)], validation_data=(x_train_scaled[int(len(x_train) * 0.8):], None),
-                epochs=args.vae_epochs, batch_size=args.vae_batch_size, verbose=0, callbacks=[es])
+        vae.fit(x_train_scaled[0:int(len(x_train) * 0.8)], validation_data=(x_train_scaled[int(len(x_train) * 0.8):], None), epochs=args.vae_epochs, batch_size=args.vae_batch_size, verbose=0, callbacks=[es])
 
         predictor = load_vae_predictor(int(params['latent_dim']))
         # Prepared predictor training input
@@ -49,7 +48,8 @@ space = {
     'std_scale': hp.uniform('std_scale', 0, 20),
     'len_scale': hp.uniform('len_scale', 1, 3),
     'signal_scale': hp.uniform('signal_scale', 15, 30),
-    'latent_dim': hp.quniform('latent_dim', 0, 150, 5)
+    'latent_dim': hp.quniform('latent_dim', 0, 150, 5),
+    'vae_lr': hp.loguniform('vae_lr', np.log(0.0001), np.log(0.01))
     }
 bayes_trials = Trials()
 best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=15, trials=bayes_trials)

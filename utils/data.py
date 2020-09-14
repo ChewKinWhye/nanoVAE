@@ -104,8 +104,8 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
 
 
 def load_multiple_reads_data(data_size, data_path, feature_scale):
-    test_size = 2500
-    total_size = 2000000
+    test_size = 10000
+    total_size = 1000000
     # Global parameters
     file_path_normal = os.path.join(data_path, "pcr.tsv")
     file_path_modified = os.path.join(data_path, "msssi.tsv")
@@ -134,6 +134,7 @@ def load_multiple_reads_data(data_size, data_path, feature_scale):
         if len(non_modified_duplicate[x]) >= 10:
             test_x.append(non_modified_duplicate[x][0:10])
     non_modified_duplicate.clear()
+    print(len(test_x))
     test_x = test_x[0:test_size]
 
     modified_duplicate = {}
@@ -157,6 +158,7 @@ def load_multiple_reads_data(data_size, data_path, feature_scale):
     for x in modified_duplicate:
         if len(modified_duplicate[x]) >= 10:
             test_x.append(modified_duplicate[x][0:10])
+    print(len(test_x))
     test_x = test_x[0:2 * test_size]
     test_x = np.asarray(test_x)
     test_y = np.append(np.zeros(test_size), np.ones(test_size))

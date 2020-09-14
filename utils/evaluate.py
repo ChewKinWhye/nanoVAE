@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import auc, confusion_matrix, roc_curve, accuracy_score, recall_score, precision_score
 import random
 import os
+from sklearn.decomposition import PCA
 
 
 def compute_metrics_standardized(y_predicted, y_test):
@@ -30,8 +31,10 @@ def plot_label_clusters(encoder, data, labels):
     data_sample = np.take(data, filter_indices, axis=0)
     label_sample = np.take(labels, filter_indices, axis=0)
     z_mean = encoder.predict(data_sample)
+    pca = PCA(n_components=2)
+    components = pca.fit_transform(z_mean)
     plt.figure(figsize=(12, 10))
-    plt.scatter(z_mean[:, 0], z_mean[:, 1], c=label_sample, s=0.5)
+    plt.scatter(components[:, 0], components[:, 1], c=label_sample, s=0.5)
     plt.colorbar()
     plt.xlabel("z[0]")
     plt.ylabel("z[1]")
