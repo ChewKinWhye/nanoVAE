@@ -5,6 +5,7 @@ from tensorflow.keras.layers import Lambda
 from tensorflow.keras import backend as K
 from tensorflow.keras.losses import mse
 from tensorflow.keras.optimizers import Adam
+from tensorflow_addons.losses import metric_learning
 
 
 def inception_module(layer_in):
@@ -123,6 +124,9 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
     kl_loss = K.sum(kl_loss, axis=-1)
     kl_loss *= -0.5
     print(z_mean)
+    pair_wise_distance = metric_learning.pairwise_distance(z_mean, squared=True)
+    labels = encoder_inputs[24:48]
+    print(labels)
     vae_loss = K.mean(reconstruction_loss + kl_loss)
     vae.add_loss(vae_loss)
     vae.compile(optimizer=Adam(learning_rate=vae_lr, clipnorm=1.0))
