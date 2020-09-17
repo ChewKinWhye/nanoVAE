@@ -4,7 +4,7 @@ import numpy as np
 from utils.data import load_dna_data_vae, load_multiple_reads_data
 from utils.arguments import parse_args
 from utils.evaluate import compute_metrics_standardized, plot_label_clusters, print_results
-from utils.model import load_vae_predictor, load_vae_dna_model
+from utils.model import load_vae_predictor, load_vae_dna_model, load_vae_dna_model_deepsignal
 from utils.save import save_results
 from tensorflow.keras.callbacks import EarlyStopping
 from hyperopt import hp, tpe, Trials, fmin
@@ -17,7 +17,7 @@ x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_siz
 def objective(params):
     x_train_scaled = np.concatenate((x_train[:, 0:68]*params['kmer_scale'], x_train[:, 68:85]*params['mean_scale'], x_train[:, 85:102]*params['std_scale'], x_train[:, 102:119]*params['len_scale'], x_train[:, 119:]*params['signal_scale']), axis=1)
     x_test_scaled = np.concatenate((x_test[:, 0:68]*params['kmer_scale'], x_test[:, 68:85]*params['mean_scale'], x_test[:, 85:102]*params['std_scale'], x_test[:, 102:119]*params['len_scale'], x_test[:, 119:]*params['signal_scale']), axis=1)
-    encoder, decoder, vae = load_vae_dna_model(int(params['latent_dim']), params['rc_scale'], params['vae_lr'])
+    encoder, decoder, vae = load_vae_dna_model_deepsignal(int(params['latent_dim']), params['rc_scale'], params['vae_lr'])
     try:
         supervised_size = 10000
         es = EarlyStopping(monitor='val_loss', mode='min', patience=20)
@@ -45,11 +45,11 @@ space = {
     'kmer_scale': hp.uniform('kmer_scale', 0, 20),
     'mean_scale': hp.uniform('mean_scale', 15, 30),
     'std_scale': hp.uniform('std_scale', 0, 20),
-    'len_scale': hp.uniform('len_scale', 1, 3),
+    'len_scale': hp.uniform('len_scale', 0, 3),
     'signal_scale': hp.uniform('signal_scale', 15, 30),
     'latent_dim': hp.quniform('latent_dim', 0, 150, 5),
     'vae_lr': hp.loguniform('vae_lr', np.log(0.0001), np.log(0.01))
     }
 bayes_trials = Trials()
-best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=15, trials=bayes_trials)
+best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=25, trials=bayes_trials)
 print(best)

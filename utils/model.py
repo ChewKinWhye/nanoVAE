@@ -7,6 +7,14 @@ from tensorflow.keras.losses import mse
 from tensorflow.keras.optimizers import Adam
 
 
+def inception_module(layer_in):
+    conv1 = layers.Conv2D(32, (1,1), padding='same', activation='relu')(layer_in)
+    conv3 = layers.Conv2D(32, (1,3), padding='same', activation='relu')(layer_in)
+    conv5 = layers.Conv2D(32, (1,5), padding='same', activation='relu')(layer_in)
+    pool = layers.MaxPooling2D((1,3), strides=(1,1), padding='same')(layer_in)
+    layer_out = layers.concatenate([conv1, conv3, conv5, pool])
+    return layer_out
+
 def sampling(args):
     z_mean, z_log_var = args
     batch = K.shape(z_mean)[0]
@@ -59,23 +67,23 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
     encoder_inputs = keras.Input(shape=(479,))
     base = Lambda(lambda y: y[:, 0:68])(encoder_inputs)
     base = layers.Reshape((17, 4))(base)
-    base = layers.Permute((2, 1))(base)
     features = Lambda(lambda y: y[:, 68:119])(encoder_inputs)
     features = layers.Reshape((3, 17))(features)
-    top_module = layers.Concatenate(axis=1)([base, features])
-    x = layers.Bidirectional(layers.LSTM(50))(top_module)
-    x = layers.Reshape((100, 1))(x)
+    features = layers.Permute((2,1))(features)
+    top_module = layers.Concatenate(axis=-1)([base, features])
+    x = layers.Bidirectional(layers.LSTM(50, return_sequences=True))(top_module)
     top_out = layers.Bidirectional(layers.LSTM(50))(x)
-
     bottom_module = Lambda(lambda y: y[:, 119:])(encoder_inputs)
     x = layers.Reshape((1, 360, 1))(bottom_module)
-    x = layers.Conv2D(filters=32, kernel_size=(1, 7), strides=2)(x)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 7), strides=2)(x)
     # Add in inception layers
-    x = layers.AveragePooling2D(pool_size=(1, 7), strides=5)(x)
-    x = layers.AveragePooling2D(pool_size=(1, 5), strides=3)(x)
-    bottom_out = layers.Reshape((-1,))(x)
+    x = layers.MaxPooling2D(pool_size=(1, 3), strides=2)(x)
+    x = layers.Conv2D(filters=128, kernel_size=(1, 1), strides=1)(x)
+    x = inception_module(x)
+    x = layers.Conv2D(filters=32, kernel_size=(1, 7), strides=5)(x)
+    bottom_out = layers.Reshape((544,))(x)
     # Classification module which combines top and bottom outputs using FFNN
-    x = layers.Concatenate(axis=1)([top_out, bottom_out])
+    x = layers.Concatenate(axis=-1)([top_out, bottom_out])
     z_mean = layers.Dense(latent_dim, name="z_mean")(x)
     z_log_var = layers.Dense(latent_dim, name="z_log_var")(x)
     z_mean_var = layers.Concatenate()([z_mean, z_log_var])
@@ -85,20 +93,24 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
     latent_inputs = keras.Input(shape=(latent_dim*2,))
     x_mean = Lambda(lambda y: y[:, 0:latent_dim])(latent_inputs)
     x_log_var = Lambda(lambda y: y[:, latent_dim:])(latent_inputs)
-    x = Lambda(sampling, output_shape=(latent_dim,), name='z')([x_mean, x_log_var])
-
-    top_module = Lambda(lambda y: y[:, 0:int(latent_dim/2)])(x)
-    x = layers.Reshape((50, 1))(top_module)
-    x = layers.Bidirectional(layers.LSTM(8))(x)
-    top_out = layers.Dense(117)(x)
-
-    bottom_module = Lambda(lambda x: x[:, int(latent_dim/2):])(x)
-    x = layers.Reshape((1, 50, 1))(bottom_module)
-    x = layers.Conv2D(filters=32, kernel_size=(1, 7), strides=2)(x)
-    x = layers.AveragePooling2D(pool_size=(1, 7), strides=5)(x)
-    x = layers.AveragePooling2D(pool_size=(1, 5), strides=3)(x)
-    x = layers.Reshape((-1,))(x)
-    bottom_out = layers.Dense(360, activation='sigmoid')(x)
+    latent_sampled = Lambda(sampling, output_shape=(latent_dim,), name='z')([x_mean, x_log_var])
+    fc_out = layers.Dense(256, activation='relu')(latent_sampled)
+    top_module = Lambda(lambda y: y[:, 0:119])(fc_out)
+    x = layers.Reshape((17, 7))(top_module)
+    x = layers.Bidirectional(layers.LSTM(7, return_sequences=True))(x)
+    x = layers.Bidirectional(layers.LSTM(7, return_sequences=True))(x)
+    x = layers.LSTM(7, return_sequences=True)(x)
+    x = layers.Reshape((119,))(x)
+    top_out = layers.Dense(119)(x)
+    bottom_module = Lambda(lambda x: x[:, 119:])(fc_out)
+    x = layers.Reshape((1, 137, 1))(bottom_module)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 7), strides=2)(x)
+    x = layers.MaxPooling2D(pool_size=(1, 3), strides=2)(x)
+    x = layers.Conv2D(filters=128, kernel_size=(1, 1), strides=1)(x)
+    x = inception_module(x)
+    x = layers.Conv2D(filters=32, kernel_size=(1, 7), strides=5)(x)
+    x = layers.Reshape((192,))(x)
+    bottom_out = layers.Dense(360)(x)
     decoder_outputs = layers.Concatenate(axis=1)([top_out, bottom_out])
     decoder_outputs = layers.Reshape((479,))(decoder_outputs)
     decoder = keras.Model(latent_inputs, decoder_outputs, name="decoder")
@@ -110,6 +122,7 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
     kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
     kl_loss = K.sum(kl_loss, axis=-1)
     kl_loss *= -0.5
+    print(z_mean)
     vae_loss = K.mean(reconstruction_loss + kl_loss)
     vae.add_loss(vae_loss)
     vae.compile(optimizer=Adam(learning_rate=vae_lr, clipnorm=1.0))

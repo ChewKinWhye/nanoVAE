@@ -2,12 +2,12 @@ import numpy as np
 from utils.data import load_dna_data_vae, load_multiple_reads_data
 from utils.arguments import parse_args
 from utils.evaluate import compute_metrics_standardized, plot_label_clusters, print_results
-from utils.model import load_vae_predictor, load_vae_dna_model
+from utils.model import load_vae_predictor, load_vae_dna_model, load_vae_dna_model_deepsignal
 from utils.save import save_results
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 import time
 import tensorflow as tf
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 
 
 if __name__ == "__main__":
@@ -16,7 +16,10 @@ if __name__ == "__main__":
     NAME = f"VAE_DNA-{int(time.time())}"
     x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_size, args.data_path, args.feature_scale)
     # Train VAE
-    encoder, decoder, vae = load_vae_dna_model(args.latent_dim, args.rc_loss_scale, args.vae_lr)
+    encoder, decoder, vae = load_vae_dna_model_deepsignal(args.latent_dim, args.rc_loss_scale, args.vae_lr)
+    encoder.summary()
+    decoder.summary()
+
     es = EarlyStopping(monitor='val_loss', mode='min', patience=20)
     tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
     vae.fit(x_train[0:int(len(x_train)*0.8)], validation_data=(x_train[int(len(x_train)*0.8):], None), epochs=args.vae_epochs, batch_size=args.vae_batch_size, verbose=2, callbacks=[es, tensorboard])
