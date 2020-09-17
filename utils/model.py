@@ -123,8 +123,13 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
     kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
     kl_loss = K.sum(kl_loss, axis=-1)
     kl_loss *= -0.5
-    print(z_mean)
-    pair_wise_distance = metric_learning.pairwise_distance(z_mean, squared=True)
+    pairwise_distances_squared = tf.math.add(
+        tf.math.reduce_sum(tf.math.square(z_mean), axis=[1], keepdims=True),
+        tf.math.reduce_sum(
+            tf.math.square(tf.transpose(z_mean)), axis=[0], keepdims=True
+        ),
+    ) - 2.0 * tf.matmul(z_mean, tf.transpose(z_mean))
+    print(pairwise_distances_squared)
     labels = encoder_inputs[24:48]
     print(labels)
     vae_loss = K.mean(reconstruction_loss + kl_loss)
