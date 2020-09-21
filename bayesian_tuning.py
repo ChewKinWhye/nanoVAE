@@ -15,6 +15,7 @@ x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_siz
 
 
 def objective(params):
+    print(params)
     x_train_scaled = np.concatenate((x_train[:, 0:68]*params['kmer_scale'], x_train[:, 68:85]*params['mean_scale'], x_train[:, 85:102]*params['std_scale'], x_train[:, 102:119]*params['len_scale'], x_train[:, 119:]*params['signal_scale']), axis=1)
     x_test_scaled = np.concatenate((x_test[:, 0:68]*params['kmer_scale'], x_test[:, 68:85]*params['mean_scale'], x_test[:, 85:102]*params['std_scale'], x_test[:, 102:119]*params['len_scale'], x_test[:, 119:]*params['signal_scale']), axis=1)
     encoder, decoder, vae = load_vae_dna_model_deepsignal(int(params['latent_dim']), params['rc_scale'], params['vae_lr'])
@@ -51,5 +52,5 @@ space = {
     'vae_lr': hp.loguniform('vae_lr', np.log(0.0001), np.log(0.01))
     }
 bayes_trials = Trials()
-best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=25, trials=bayes_trials)
+best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=50, trials=bayes_trials)
 print(best)
