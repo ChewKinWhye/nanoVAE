@@ -3,7 +3,7 @@ import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser('Train your VAE')
-    parser.add_argument('--data_path', type=str, default='data', help='path to data directory')
+    parser.add_argument('--data_path', type=str, default='/hdd/modifications/ecoli/deepsignal', help='path to data directory')
     parser.add_argument('--output_filename', type=str, default='vae_model', help='name of the output file')
 
     # Other hyper-parameters

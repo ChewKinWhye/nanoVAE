@@ -11,7 +11,7 @@ from hyperopt import hp, tpe, Trials, fmin
 
 args = parse_args()
 
-x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_size, args.data_path, [1, 1, 1, 1, 1])
+x_train, y_train, x_test, y_test, x_val, y_val, standardize_scale = load_dna_data_vae(args.data_size, args.data_path, [1, 1, 1, 1, 1])
 
 
 def objective(params):
@@ -44,10 +44,10 @@ def objective(params):
 space = {
     'rc_scale': hp.uniform('rc_scale', 1, 15),
     'kmer_scale': hp.uniform('kmer_scale', 0, 20),
-    'mean_scale': hp.uniform('mean_scale', 15, 30),
+    'mean_scale': hp.uniform('mean_scale', 10, 30),
     'std_scale': hp.uniform('std_scale', 0, 20),
-    'len_scale': hp.uniform('len_scale', 0, 3),
-    'signal_scale': hp.uniform('signal_scale', 15, 30),
+    'len_scale': hp.uniform('len_scale', 0, 20),
+    'signal_scale': hp.uniform('signal_scale', 10, 30),
     'latent_dim': hp.quniform('latent_dim', 0, 150, 5),
     'vae_lr': hp.loguniform('vae_lr', np.log(0.0001), np.log(0.01))
     }

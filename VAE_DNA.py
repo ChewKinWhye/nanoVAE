@@ -14,7 +14,7 @@ if __name__ == "__main__":
     args = parse_args()
     supervised_size = 10000
     NAME = f"VAE_DNA-{int(time.time())}"
-    x_train, y_train, x_test, y_test, x_val, y_val = load_dna_data_vae(args.data_size, args.data_path, args.feature_scale)
+    x_train, y_train, x_test, y_test, x_val, y_val, standardize_scale = load_dna_data_vae(args.data_size, args.data_path, args.feature_scale)
     # Train VAE
     encoder, decoder, vae = load_vae_dna_model_deepsignal(args.latent_dim, args.rc_loss_scale, args.vae_lr)
     encoder.summary()
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     save_results(args.output_filename, test_results, encoding_cluster_plt, encoder, predictor)
     # Test model with multiple reads
     '''
-    x_test_10, y_test_10 = load_multiple_reads_data(args.data_size, args.data_path, args.feature_scale)
+    x_test_10, y_test_10 = load_multiple_reads_data(args.data_size, args.data_path, args.feature_scale, standardize_scale)
     predictions = []
     for x in x_test_10:
         x_test_predictor = encoder.predict(x)

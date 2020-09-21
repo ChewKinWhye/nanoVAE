@@ -5,6 +5,41 @@ import random
 from sklearn.utils import shuffle
 
 
+def standardize_and_scale_data(non_modified_data, modified_data, feature_scale, standardize_scale=None):
+    non_modified_data = np.asarray(non_modified_data)
+    modified_data = np.asarray(modified_data)
+    total_data = np.concatenate((non_modified_data, modified_data), axis=0)
+    if standardize_scale is None:
+        kmer_mean = np.mean(total_data[:, 0:68].flatten())
+        kmer_std = np.std(total_data[:, 0:68].flatten())
+        mean_mean = np.mean(total_data[:, 68:85].flatten())
+        mean_std = np.std(total_data[:, 68:85].flatten())
+        std_mean = np.mean(total_data[:, 85:102].flatten())
+        std_std = np.std(total_data[:, 85:102].flatten())
+        length_mean = np.mean(total_data[:, 102:119].flatten())
+        length_std = np.std(total_data[:, 102:119].flatten())
+        signal_mean = np.mean(total_data[:, 119:].flatten())
+        signal_std = np.std(total_data[:, 119:].flatten())
+        standardize_scale = [kmer_mean, kmer_std, mean_mean, mean_std, std_mean, std_std, length_mean, length_std, signal_mean, signal_std]
+    
+    non_modified_data[:, 0:68] = (non_modified_data[:, 0:68] - standardize_scale[0]) / standardize_scale[1] * feature_scale[0]
+    modified_data[:, 0:68] = (modified_data[:, 0:68] - standardize_scale[0]) / standardize_scale[1] * feature_scale[0]
+    
+    non_modified_data[:, 68:85] = (non_modified_data[:, 68:85] - standardize_scale[2]) / standardize_scale[3] * feature_scale[1]
+    modified_data[:, 68:85] = (modified_data[:, 68:85] - standardize_scale[2]) / standardize_scale[3] * feature_scale[1]
+
+    non_modified_data[:, 85:102] = (non_modified_data[:, 85:102] - standardize_scale[4]) / standardize_scale[5] * feature_scale[2]
+    modified_data[:, 85:102] = (modified_data[:, 85:102] - standardize_scale[4]) / standardize_scale[5] * feature_scale[2]
+
+    non_modified_data[:, 102:119] = (non_modified_data[:, 102:119] - standardize_scale[6]) / standardize_scale[7] * feature_scale[3]
+    modified_data[:, 102:119] = (modified_data[:, 102:119] - standardize_scale[6]) / standardize_scale[7] * feature_scale[3]
+    
+    non_modified_data[:, 119:] = (non_modified_data[:, 119:] - standardize_scale[8]) / standardize_scale[9] * feature_scale[4]
+    modified_data[:, 119:] = (modified_data[:, 119:] - standardize_scale[8]) / standardize_scale[9] * feature_scale[4]
+    
+    return non_modified_data.tolist(), modified_data.tolist(), standardize_scale
+
+
 def check_data(row):
     signal_float = [float(i) for i in row[10].split(",")]
     len_float = [float(i) for i in row[9].split(",")]
@@ -17,18 +52,20 @@ def check_data(row):
         return False
     if row[6][6:11] != "ATCGA":
         return False
+    if np.any(np.isnan(signal_float)) or np.any(np.isnan(len_float)) or np.any(np.isnan(sd_float)):
+        return False
     return True
 
 
-def process_data(row, feature_scale):
+def process_data(row):
     dna_lookup = {"A": [0, 0, 0, 1], "T": [0, 0, 1, 0], "G": [0, 1, 0, 0], "C": [1, 0, 0, 0]}
     row_data = []
     for i in row[6]:
-        row_data.extend([j * feature_scale[0] for j in dna_lookup[i]])
-    row_data.extend([float(i)*feature_scale[1] for i in row[7].split(",")])
-    row_data.extend([float(i)*feature_scale[2] for i in row[8].split(",")])
-    row_data.extend([float(i)*feature_scale[3] for i in row[9].split(",")])
-    row_data.extend([float(i)*feature_scale[4] for i in row[10].split(",")])
+        row_data.extend([j for j in dna_lookup[i]])
+    row_data.extend([float(i) for i in row[7].split(",")])
+    row_data.extend([float(i) for i in row[8].split(",")])
+    row_data.extend([float(i) for i in row[9].split(",")])
+    row_data.extend([float(i) for i in row[10].split(",")])
     row_data_float = [float(i) for i in row_data]
     return row_data_float
 
@@ -53,7 +90,7 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
             if check_data(row) is False:
                 outlier_counter += 1
                 continue
-            row_data = process_data(row, feature_scale)
+            row_data = process_data(row)
             non_modified_data.append(row_data)
             data_count += 1
 
@@ -68,12 +105,12 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
             if check_data(row) is False:
                 outlier_counter += 1
                 continue
-            row_data = process_data(row, feature_scale)
+            row_data = process_data(row)
             modified_data.append(row_data)
             data_count += 1
 
     print(f"Number of outliers: {outlier_counter}")
-
+    non_modified_data, modified_data, standardize_scale = standardize_and_scale_data(non_modified_data, modified_data, feature_scale)
     random.shuffle(non_modified_data)
     random.shuffle(modified_data)
 
@@ -100,10 +137,10 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
     print(f"Validation data shape: {val_x.shape}")
     print(f"Validation data labels shape: {val_y.shape}")
 
-    return train_x, train_y.astype(int), test_x, test_y.astype(int), val_x, val_y.astype(int)
+    return train_x, train_y.astype(int), test_x, test_y.astype(int), val_x, val_y.astype(int), standardize_scale
 
 
-def load_multiple_reads_data(data_size, data_path, feature_scale):
+def load_multiple_reads_data(data_size, data_path, feature_scale, standardize_scale):
     test_size = 10000
     total_size = 1000000
     # Global parameters
@@ -125,7 +162,7 @@ def load_multiple_reads_data(data_size, data_path, feature_scale):
             if row[3] not in non_modified_duplicate:
                 non_modified_duplicate[row[3]] = []
             # Append data
-            row_data = process_data(row, feature_scale)
+            row_data = process_data(row)
             non_modified_duplicate[row[3]].append(row_data)
             data_count += 1
 
@@ -150,7 +187,7 @@ def load_multiple_reads_data(data_size, data_path, feature_scale):
                 break
             if row[3] not in modified_duplicate:
                 modified_duplicate[row[3]] = []
-            row_data = process_data(row, feature_scale)
+            row_data = process_data(row)
             modified_duplicate[row[3]].append(row_data)
             data_count += 1
 
@@ -159,6 +196,7 @@ def load_multiple_reads_data(data_size, data_path, feature_scale):
         if len(modified_duplicate[x]) >= 10:
             test_x.append(modified_duplicate[x][0:10])
     print(len(test_x))
+    test_x[0:test_size], test_x[test_size:] = standardize_and_scale_data(test_x[0:test_size], test_x[test_size:], feature_scale, standardize_scale) 
     test_x = test_x[0:2 * test_size]
     test_x = np.asarray(test_x)
     test_y = np.append(np.zeros(test_size), np.ones(test_size))
