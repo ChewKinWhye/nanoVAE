@@ -62,7 +62,7 @@ def load_vae_dna_model(latent_dim, rc_loss_scale, vae_lr):
     return encoder, decoder, vae
 
 
-def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
+def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr, kmer_loss_scale):
     # Build encoder
     encoder_inputs = keras.Input(shape=(479,))
     base = Lambda(lambda y: y[:, 0:68])(encoder_inputs)
@@ -75,12 +75,12 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
     top_out = layers.Bidirectional(layers.LSTM(50))(x)
     bottom_module = Lambda(lambda y: y[:, 119:])(encoder_inputs)
     x = layers.Reshape((1, 360, 1))(bottom_module)
-    x = layers.Conv2D(filters=64, kernel_size=(1, 7), strides=2)(x)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 7), activation='relu', strides=2)(x)
     # Add in inception layers
     x = layers.MaxPooling2D(pool_size=(1, 3), strides=2)(x)
-    x = layers.Conv2D(filters=128, kernel_size=(1, 1), strides=1)(x)
+    x = layers.Conv2D(filters=128, kernel_size=(1, 1), activation='relu', strides=1)(x)
     x = inception_module(x)
-    x = layers.Conv2D(filters=32, kernel_size=(1, 7), strides=5)(x)
+    x = layers.Conv2D(filters=32, kernel_size=(1, 7), activation='tanh', strides=5)(x)
     bottom_out = layers.Reshape((544,))(x)
     # Classification module which combines top and bottom outputs using FFNN
     x = layers.Concatenate(axis=-1)([top_out, bottom_out])
@@ -105,11 +105,11 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
     top_out = layers.Dense(119, activation="relu")(x)
     bottom_module = Lambda(lambda x: x[:, 119:])(fc_out)
     x = layers.Reshape((1, 137, 1))(bottom_module)
-    x = layers.Conv2D(filters=64, kernel_size=(1, 7), strides=2)(x)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 7), activation='relu', strides=2)(x)
     x = layers.MaxPooling2D(pool_size=(1, 3), strides=2)(x)
-    x = layers.Conv2D(filters=128, kernel_size=(1, 1), strides=1)(x)
+    x = layers.Conv2D(filters=128, kernel_size=(1, 1), activation='relu', strides=1)(x)
     x = inception_module(x)
-    x = layers.Conv2D(filters=32, kernel_size=(1, 7), strides=5)(x)
+    x = layers.Conv2D(filters=32, kernel_size=(1, 7), activation='tanh', strides=5)(x)
     x = layers.Reshape((192,))(x)
     bottom_out = layers.Dense(360, activation="relu")(x)
     decoder_outputs = layers.Concatenate(axis=1)([top_out, bottom_out])
@@ -124,7 +124,7 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
     kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
     kl_loss = K.sum(kl_loss, axis=-1)
     kl_loss *= -0.5
-    z_mean_norm = tf.math.divide(tf.subtract(z_mean, tf.reduce_min(z_mean, axis=0)), tf.subtract(tf.reduce_max(z_mean, axis=0), tf.reduce_min(z_mean, axis=0)))
+    z_mean_norm = tf.math.l2_normalize(z_mean, axis=1, epsilon=1e-12)
     pairwise_distances_squared = tf.math.add(
         tf.math.reduce_sum(tf.math.square(z_mean_norm), axis=[1], keepdims=True),
         tf.math.reduce_sum(
@@ -132,12 +132,12 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr):
         ),
     ) - 2.0 * tf.matmul(z_mean_norm, tf.transpose(z_mean_norm))
     pairwise_distances_squared = tf.reshape(pairwise_distances_squared, [-1])
-    labels = encoder_inputs[:, 24:48]
+    labels = encoder_inputs[:, 24:44]
     label_mask = tf.reduce_all(tf.math.equal(tf.expand_dims(labels, axis=0), tf.expand_dims(labels, axis=1)), 2)
     label_mask = tf.math.logical_not(tf.reshape(label_mask, [-1]))
-    k_mer_loss = tf.boolean_mask(pairwise_distances_squared, label_mask)
-    k_mer_loss = tf.reduce_mean(k_mer_loss) * 0.1
-    vae_loss = K.mean(reconstruction_loss + kl_loss - k_mer_loss)
+    kmer_loss = tf.boolean_mask(pairwise_distances_squared, label_mask)
+    kmer_loss = tf.reduce_mean(kmer_loss) * kmer_loss_scale
+    vae_loss = K.mean(reconstruction_loss + kl_loss)
     vae.add_loss(vae_loss)
     vae.compile(optimizer=Adam(learning_rate=vae_lr, clipnorm=1.0, epsilon=1e-06))
     return encoder, decoder, vae

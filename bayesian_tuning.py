@@ -18,7 +18,7 @@ def objective(params):
     print(params)
     x_train_scaled = np.concatenate((x_train[:, 0:68]*params['kmer_scale'], x_train[:, 68:85]*params['mean_scale'], x_train[:, 85:102]*params['std_scale'], x_train[:, 102:119]*params['len_scale'], x_train[:, 119:]*params['signal_scale']), axis=1)
     x_test_scaled = np.concatenate((x_test[:, 0:68]*params['kmer_scale'], x_test[:, 68:85]*params['mean_scale'], x_test[:, 85:102]*params['std_scale'], x_test[:, 102:119]*params['len_scale'], x_test[:, 119:]*params['signal_scale']), axis=1)
-    encoder, decoder, vae = load_vae_dna_model_deepsignal(int(params['latent_dim']), params['rc_scale'], params['vae_lr'])
+    encoder, decoder, vae = load_vae_dna_model_deepsignal(int(params['latent_dim']), params['rc_scale'], params['vae_lr'], params['kmer_loss_scale'])
     try:
         supervised_size = 10000
         es = EarlyStopping(monitor='val_loss', mode='min', patience=20)
@@ -49,7 +49,8 @@ space = {
     'len_scale': hp.uniform('len_scale', 0, 20),
     'signal_scale': hp.uniform('signal_scale', 10, 30),
     'latent_dim': hp.quniform('latent_dim', 0, 150, 5),
-    'vae_lr': hp.loguniform('vae_lr', np.log(0.0001), np.log(0.01))
+    'vae_lr': hp.loguniform('vae_lr', np.log(0.0001), np.log(0.01)),
+    'kmer_loss_scale': hp.uniform('kmer_loss_scale', 0, 15)
     }
 bayes_trials = Trials()
 best = fmin(fn=objective, space=space, algo=tpe.suggest, max_evals=50, trials=bayes_trials)

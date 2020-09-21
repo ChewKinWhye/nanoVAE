@@ -196,7 +196,7 @@ def load_multiple_reads_data(data_size, data_path, feature_scale, standardize_sc
         if len(modified_duplicate[x]) >= 10:
             test_x.append(modified_duplicate[x][0:10])
     print(len(test_x))
-    test_x[0:test_size], test_x[test_size:] = standardize_and_scale_data(test_x[0:test_size], test_x[test_size:], feature_scale, standardize_scale) 
+    test_x[0:test_size], test_x[test_size:], _ = standardize_and_scale_data(test_x[0:test_size], test_x[test_size:], feature_scale, standardize_scale) 
     test_x = test_x[0:2 * test_size]
     test_x = np.asarray(test_x)
     test_y = np.append(np.zeros(test_size), np.ones(test_size))
