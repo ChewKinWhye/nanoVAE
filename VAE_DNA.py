@@ -22,11 +22,10 @@ if __name__ == "__main__":
 
     es = EarlyStopping(monitor='val_loss', mode='min', patience=20)
     tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
-    vae.fit(x_train[0:int(len(x_train)*0.8)], validation_data=(x_train[int(len(x_train)*0.8):], None), epochs=args.vae_epochs, batch_size=args.vae_batch_size, verbose=2, callbacks=[es, tensorboard])
+    vae.fit(x_train[0:int(len(x_train)*0.8)], validation_data=(x_train[int(len(x_train)*0.8):], None), epochs=args.vae_epochs, batch_size=args.vae_batch_size, verbose=2, callbacks=[es])
 
     #encoder.compile(optimizer=tf.keras.optimizers.Adam(0.001), loss=tfa.losses.TripletSemiHardLoss())
     #encoder.fit(x_train[0:supervised_size], y_train[0:supervised_size], epochs=15)
-
     # Visualize cluster
     encoding_cluster_plt = plot_label_clusters(encoder, x_train, y_train)
     

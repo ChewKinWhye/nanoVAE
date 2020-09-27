@@ -24,7 +24,7 @@ def sampling(args):
     return z_mean + K.exp(0.5 * z_log_var) * epsilon
 
 
-def load_vae_dna_model(latent_dim, rc_loss_scale, vae_lr):
+def load_vae_dna_model(latent_dim, rc_loss_scale, vae_lr, dummy):
     # Build encoder
     encoder_inputs = keras.Input(shape=(479,))
     x = layers.Dense(512, activation="relu")(encoder_inputs)
@@ -137,9 +137,9 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr, kmer_loss_s
     label_mask = tf.math.logical_not(tf.reshape(label_mask, [-1]))
     kmer_loss = tf.boolean_mask(pairwise_distances_squared, label_mask)
     kmer_loss = tf.reduce_mean(kmer_loss) * kmer_loss_scale
-    vae_loss = K.mean(reconstruction_loss + kl_loss)
+    vae_loss = K.mean(reconstruction_loss + kl_loss + kmer_loss)
     vae.add_loss(vae_loss)
-    vae.compile(optimizer=Adam(learning_rate=vae_lr, clipnorm=1.0, epsilon=1e-06))
+    vae.compile(optimizer=Adam(learning_rate=0, clipnorm=1.0, epsilon=1e-06))
     return encoder, decoder, vae
 
 

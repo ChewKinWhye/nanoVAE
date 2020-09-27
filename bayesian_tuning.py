@@ -36,6 +36,9 @@ def objective(params):
         x_test_predictor = encoder.predict(x_test_scaled)
         predictions = predictor.predict(x_test_predictor)
         test_results = compute_metrics_standardized(predictions, y_test)
+        if test_results[0] < 0.51:
+            encoding_cluster_plt = plot_label_clusters(encoder, x_train, y_train)
+            save_results(args.output_filename, test_results, encoding_cluster_plt, encoder, predictor)
         print_results(test_results)
         return test_results[0] * -1
     except:

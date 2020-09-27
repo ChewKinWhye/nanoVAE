@@ -3,23 +3,25 @@ import csv
 import os
 import random
 from sklearn.utils import shuffle
-
+from math import sqrt
 
 def standardize_and_scale_data(non_modified_data, modified_data, feature_scale, standardize_scale=None):
-    non_modified_data = np.asarray(non_modified_data)
-    modified_data = np.asarray(modified_data)
-    total_data = np.concatenate((non_modified_data, modified_data), axis=0)
     if standardize_scale is None:
-        kmer_mean = np.mean(total_data[:, 0:68].flatten())
-        kmer_std = np.std(total_data[:, 0:68].flatten())
-        mean_mean = np.mean(total_data[:, 68:85].flatten())
-        mean_std = np.std(total_data[:, 68:85].flatten())
-        std_mean = np.mean(total_data[:, 85:102].flatten())
-        std_std = np.std(total_data[:, 85:102].flatten())
-        length_mean = np.mean(total_data[:, 102:119].flatten())
-        length_std = np.std(total_data[:, 102:119].flatten())
-        signal_mean = np.mean(total_data[:, 119:].flatten())
-        signal_std = np.std(total_data[:, 119:].flatten())
+        kmer_mean = (np.mean(non_modified_data[:, 0:68].flatten()) + np.mean(modified_data[:, 0:68].flatten())) / 2
+        kmer_mean_squared = (np.mean(np.square(non_modified_data[:, 0:68].flatten())) + np.mean(np.square(modified_data[:, 0:68].flatten()))) / 2
+        kmer_std = sqrt(kmer_mean_squared - kmer_mean**2)
+        mean_mean = (np.mean(non_modified_data[:, 68:85].flatten()) + np.mean(modified_data[:, 68:85].flatten())) / 2
+        mean_mean_squared = (np.mean(np.square(non_modified_data[:, 68:85].flatten())) + np.mean(np.square(modified_data[:, 68:85].flatten()))) / 2
+        mean_std = sqrt(mean_mean_squared - mean_mean**2)
+        std_mean = (np.mean(non_modified_data[:, 85:102].flatten()) + np.mean(modified_data[:, 85:102].flatten())) / 2
+        std_mean_squared = (np.mean(np.square(non_modified_data[:, 85:102].flatten())) + np.mean(np.square(modified_data[:, 85:102].flatten()))) / 2
+        std_std = sqrt(std_mean_squared - std_mean**2)
+        length_mean = (np.mean(non_modified_data[:, 102:119].flatten()) + np.mean(modified_data[:, 102:119].flatten())) / 2
+        length_mean_squared = (np.mean(np.square(non_modified_data[:, 102:119].flatten())) + np.mean(np.square(modified_data[:, 102:119].flatten()))) / 2
+        length_std = sqrt(length_mean_squared - length_mean**2)
+        signal_mean = (np.mean(non_modified_data[:, 119:].flatten()) + np.mean(modified_data[:, 119:].flatten())) / 2
+        signal_mean_squared = (np.mean(np.square(non_modified_data[:, 119:].flatten())) + np.mean(np.square(modified_data[:, 119:].flatten()))) / 2
+        signal_std = sqrt(signal_mean_squared - signal_mean**2)
         standardize_scale = [kmer_mean, kmer_std, mean_mean, mean_std, std_mean, std_std, length_mean, length_std, signal_mean, signal_std]
     
     non_modified_data[:, 0:68] = (non_modified_data[:, 0:68] - standardize_scale[0]) / standardize_scale[1] * feature_scale[0]
@@ -50,8 +52,8 @@ def check_data(row):
     # Check for data errors
     if row[5].lower() == 'c':
         return False
-    if row[6][6:11] != "ATCGA":
-        return False
+#    if row[6][6:11] != "ATCGA":
+#        return False
     if np.any(np.isnan(signal_float)) or np.any(np.isnan(len_float)) or np.any(np.isnan(sd_float)):
         return False
     return True
@@ -110,7 +112,7 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
             data_count += 1
 
     print(f"Number of outliers: {outlier_counter}")
-    non_modified_data, modified_data, standardize_scale = standardize_and_scale_data(non_modified_data, modified_data, feature_scale)
+    non_modified_data, modified_data, standardize_scale = standardize_and_scale_data(np.asarray(non_modified_data), np.asarray(modified_data), feature_scale)
     random.shuffle(non_modified_data)
     random.shuffle(modified_data)
 
