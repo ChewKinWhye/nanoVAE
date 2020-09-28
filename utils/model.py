@@ -124,20 +124,22 @@ def load_vae_dna_model_deepsignal(latent_dim, rc_loss_scale, vae_lr, kmer_loss_s
     kl_loss = 1 + z_log_var - K.square(z_mean) - K.exp(z_log_var)
     kl_loss = K.sum(kl_loss, axis=-1)
     kl_loss *= -0.5
-    z_mean_norm = tf.math.l2_normalize(z_mean, axis=1, epsilon=1e-12)
+    ''' 
+    kmer_out_norm = tf.math.l2_normalize(kmer_out, axis=1, epsilon=1e-12)
     pairwise_distances_squared = tf.math.add(
-        tf.math.reduce_sum(tf.math.square(z_mean_norm), axis=[1], keepdims=True),
+        tf.math.reduce_sum(tf.math.square(kmer_out_norm), axis=[1], keepdims=True),
         tf.math.reduce_sum(
-            tf.math.square(tf.transpose(z_mean_norm)), axis=[0], keepdims=True
+            tf.math.square(tf.transpose(kmer_out_norm)), axis=[0], keepdims=True
         ),
-    ) - 2.0 * tf.matmul(z_mean_norm, tf.transpose(z_mean_norm))
+    ) - 2.0 * tf.matmul(kmer_out_norm, tf.transpose(kmer_out_norm))
     pairwise_distances_squared = tf.reshape(pairwise_distances_squared, [-1])
     labels = encoder_inputs[:, 24:44]
     label_mask = tf.reduce_all(tf.math.equal(tf.expand_dims(labels, axis=0), tf.expand_dims(labels, axis=1)), 2)
     label_mask = tf.math.logical_not(tf.reshape(label_mask, [-1]))
     kmer_loss = tf.boolean_mask(pairwise_distances_squared, label_mask)
     kmer_loss = tf.reduce_mean(kmer_loss) * kmer_loss_scale
-    vae_loss = K.mean(reconstruction_loss + kl_loss + kmer_loss)
+    '''
+    vae_loss = K.mean(reconstruction_loss + kl_loss)
     vae.add_loss(vae_loss)
     vae.compile(optimizer=Adam(learning_rate=0, clipnorm=1.0, epsilon=1e-06))
     return encoder, decoder, vae
