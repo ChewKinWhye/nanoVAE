@@ -5,6 +5,11 @@ from tensorflow.keras.layers import Lambda
 from tensorflow.keras import backend as K
 from tensorflow.keras.losses import mse
 from tensorflow.keras.optimizers import Adam
+from funcy import concat, identity, juxt, partial, rcompose, repeat, take
+from tensorflow.keras.layers import Activation, Add, BatchNormalization, Concatenate, Conv1D, Dense, Dropout, concatenate,  \
+    GlobalAveragePooling1D, Input, MaxPooling1D, GaussianNoise,AveragePooling1D
+from tensorflow.keras.models import Model, save_model
+from tensorflow.keras.regularizers import l2
 
 
 def inception_module(layer_in):
@@ -156,3 +161,32 @@ def load_vae_predictor(latent_dim):
     predictor = keras.Model(predictor_input, predictor_output, name="predictor")
     predictor.compile(loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam())
     return predictor
+
+
+def build_five_mer_model():
+    five_mer_inputs = keras.Input(shape=(411,))
+    top_module = Lambda(lambda y: y[:, 0:68])(five_mer_inputs)
+    x = layers.Reshape((17, 4))(top_module)
+    x = layers.Bidirectional(layers.LSTM(50, return_sequences=True))(x)
+    top_out = layers.Bidirectional(layers.LSTM(50))(x)
+
+    bottom_module = Lambda(lambda y: y[:, 68:])(five_mer_inputs)
+    x = layers.Reshape((1, 360, 1))(bottom_module)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 7), activation='relu', strides=2)(x)
+    # Add in inception layers
+    x = layers.MaxPooling2D(pool_size=(1, 3), strides=2)(x)
+    x = layers.Conv2D(filters=128, kernel_size=(1, 1), activation='relu', strides=1)(x)
+    x = inception_module(x)
+    x = layers.Conv2D(filters=32, kernel_size=(1, 7), activation='tanh', strides=5)(x)
+    bottom_out = layers.Reshape((544,))(x)
+    # Classification module which combines top and bottom outputs using FFNN
+    total_out = layers.Concatenate(axis=-1)([top_out, bottom_out])
+    x = layers.Dense(1024, activation='relu')(total_out)
+    x = layers.Dense(1024, activation='relu')(x)
+    x = layers.Dense(1024, activation='softmax')(x)
+    five_mer_out = layers.Dense(256, activation="relu")(x)
+    five_mer_model = keras.Model(five_mer_inputs, five_mer_out, name="kmer_model")
+    five_mer_model.compile(loss='categorical_crossentropy',
+                           optimizer=Adam(lr=0.0005, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
+                           metrics=['accuracy'])
+    return five_mer_model
