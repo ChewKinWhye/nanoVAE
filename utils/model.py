@@ -200,3 +200,31 @@ def build_five_mer_model():
                            optimizer=Adam(lr=0.0005, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
                            metrics=['accuracy'])
     return five_mer_model
+
+
+def load_explainable_doc_model():
+    def custom_loss(y_true, y_pred):
+        # y_true: (bs, 1)
+        # y_pred: (bs, 80)
+        scale = 1 / y_pred.shape[1]
+        anomaly_score = K.sum(K.abs(y_pred))
+        loss = (1-y_true) * scale * anomaly_score - y_true * K.log(1 - K.exp(-scale * anomaly_score))
+        return loss
+
+    inputs = keras.Input(shape=(360,))
+    x = layers.Reshape((1, 360, 1))(inputs)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 3), activation='relu', strides=1)(x)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 3), activation='relu', strides=1)(x)
+    x = layers.MaxPooling2D(pool_size=(1, 3), strides=2)(x)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 3), activation='relu', strides=1)(x)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 3), activation='relu', strides=1)(x)
+    x = layers.MaxPooling2D(pool_size=(1, 3), strides=2)(x)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 3), activation='relu', strides=1)(x)
+    x = layers.Conv2D(filters=64, kernel_size=(1, 3), activation='relu', strides=1)(x)
+    x = layers.Conv2D(filters=1, kernel_size=(1, 3), activation='sigmoid', strides=1)(x)
+    outputs = layers.Flatten()(x)
+    model = keras.Model(inputs, outputs, name="explainable_doc_model")
+    model.compile(loss=custom_loss,
+                  optimizer=Adam(lr=0.0005, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
+                  metrics=['accuracy'])
+    return model

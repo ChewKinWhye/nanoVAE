@@ -112,7 +112,7 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
             data_count += 1
 
     print(f"Number of outliers: {outlier_counter}")
-    #non_modified_data, modified_data, standardize_scale = standardize_and_scale_data(np.asarray(non_modified_data), np.asarray(modified_data), feature_scale)
+    non_modified_data, modified_data, standardize_scale = standardize_and_scale_data(np.asarray(non_modified_data), np.asarray(modified_data), feature_scale)
     standardize_scale = None
     random.shuffle(non_modified_data)
     random.shuffle(modified_data)
