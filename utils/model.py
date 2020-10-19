@@ -165,12 +165,13 @@ def load_vae_predictor(latent_dim):
 
 def build_five_mer_model():
     five_mer_inputs = keras.Input(shape=(411,))
-    top_module = Lambda(lambda y: y[:, 0:68])(five_mer_inputs)
-    x = layers.Reshape((17, 4))(top_module)
+    top_module = Lambda(lambda y: y[:, 0:51])(five_mer_inputs)
+    x = layers.Reshape((3, 17))(top_module)
+    x = layers.Permute((2, 1))(x)
     x = layers.Bidirectional(layers.LSTM(50, return_sequences=True))(x)
     top_out = layers.Bidirectional(layers.LSTM(50))(x)
 
-    bottom_module = Lambda(lambda y: y[:, 68:])(five_mer_inputs)
+    bottom_module = Lambda(lambda y: y[:, 51:])(five_mer_inputs)
     x = layers.Reshape((1, 360, 1))(bottom_module)
     x = layers.Conv2D(filters=64, kernel_size=(1, 7), activation='relu', strides=2)(x)
     # Add in inception layers
@@ -181,10 +182,19 @@ def build_five_mer_model():
     bottom_out = layers.Reshape((544,))(x)
     # Classification module which combines top and bottom outputs using FFNN
     total_out = layers.Concatenate(axis=-1)([top_out, bottom_out])
-    x = layers.Dense(1024, activation='relu')(total_out)
-    x = layers.Dense(1024, activation='relu')(x)
-    x = layers.Dense(1024, activation='softmax')(x)
-    five_mer_out = layers.Dense(256, activation="relu")(x)
+    x = layers.Reshape((1, 644, 1))(total_out)
+    x = layers.Conv2D(filters=62, kernel_size=(1, 7), activation='relu', strides=2, name='stop_freeze')(x)
+    x = inception_module(x)
+    x = layers.MaxPooling2D(pool_size=(1, 7), strides=5)(x)
+    x = inception_module(x)
+    x = layers.MaxPooling2D(pool_size=(1, 7), strides=5)(x)
+    x = inception_module(x)
+    x = layers.MaxPooling2D(pool_size=(1, 5), strides=3)(x)
+    x = layers.Reshape((1050,))(x)
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dense(128, activation='relu')(x)
+    x = layers.Dense(128, activation='relu')(x)
+    five_mer_out = layers.Dense(64, activation='softmax')(x)
     five_mer_model = keras.Model(five_mer_inputs, five_mer_out, name="kmer_model")
     five_mer_model.compile(loss='categorical_crossentropy',
                            optimizer=Adam(lr=0.0005, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),

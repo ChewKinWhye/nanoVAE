@@ -112,20 +112,24 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
             data_count += 1
 
     print(f"Number of outliers: {outlier_counter}")
-    non_modified_data, modified_data, standardize_scale = standardize_and_scale_data(np.asarray(non_modified_data), np.asarray(modified_data), feature_scale)
+    #non_modified_data, modified_data, standardize_scale = standardize_and_scale_data(np.asarray(non_modified_data), np.asarray(modified_data), feature_scale)
+    standardize_scale = None
     random.shuffle(non_modified_data)
     random.shuffle(modified_data)
 
-    train_x = modified_data[0:train_size]
-    train_x.extend(non_modified_data[0:train_size])
+    #train_x = modified_data[0:train_size]
+    #train_x.extend(non_modified_data[0:train_size])
+    train_x = non_modified_data[0:train_size]
     train_x = np.asarray(train_x)
-    train_y = np.append(np.ones(train_size), np.zeros(train_size))
+    #train_y = np.append(np.ones(train_size), np.zeros(train_size))
+    train_y = np.zeros(train_size)
     train_x, train_y = shuffle(train_x, train_y, random_state=0)
 
     test_x = modified_data[train_size:train_size + test_size]
     test_x.extend(non_modified_data[train_size:train_size + test_size])
     test_x = np.asarray(test_x)
     test_y = np.append(np.ones(test_size), np.zeros(test_size))
+    test_x, test_y = shuffle(test_x, test_y, random_state=0)
 
     val_x = modified_data[train_size + test_size:]
     val_x.extend(non_modified_data[train_size + test_size:])
