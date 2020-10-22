@@ -52,8 +52,8 @@ def check_data(row):
     # Check for data errors
     if row[5].lower() == 'c':
         return False
-#    if row[6][6:11] != "ATCGA":
-#        return False
+    if row[6][6:11] != "ATCGA":
+        return False
     if np.any(np.isnan(signal_float)) or np.any(np.isnan(len_float)) or np.any(np.isnan(sd_float)):
         return False
     return True
@@ -129,7 +129,7 @@ def load_dna_data_vae(data_size, data_path, feature_scale):
     test_x.extend(non_modified_data[train_size:train_size + test_size])
     test_x = np.asarray(test_x)
     test_y = np.append(np.ones(test_size), np.zeros(test_size))
-    test_x, test_y = shuffle(test_x, test_y, random_state=0)
+    #test_x, test_y = shuffle(test_x, test_y, random_state=0)
 
     val_x = modified_data[train_size + test_size:]
     val_x.extend(non_modified_data[train_size + test_size:])

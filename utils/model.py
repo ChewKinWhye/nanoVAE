@@ -10,7 +10,7 @@ from tensorflow.keras.layers import Activation, Add, BatchNormalization, Concate
     GlobalAveragePooling1D, Input, MaxPooling1D, GaussianNoise,AveragePooling1D
 from tensorflow.keras.models import Model, save_model
 from tensorflow.keras.regularizers import l2
-
+import numpy as np
 
 def inception_module(layer_in):
     conv1 = layers.Conv2D(32, (1,1), padding='same', activation='relu')(layer_in)
@@ -204,12 +204,15 @@ def build_five_mer_model():
 
 def load_explainable_doc_model():
     def custom_loss(y_true, y_pred):
-        # y_true: (bs, 1)
-        # y_pred: (bs, 80)
         scale = 1 / y_pred.shape[1]
-        anomaly_score = K.sum(K.abs(y_pred))
-        loss = (1-y_true) * scale * anomaly_score - y_true * K.log(1 - K.exp(-scale * anomaly_score))
+        anomaly_score = K.sum(y_pred, axis=1)
+        y_true = tf.keras.backend.flatten(y_true)
+        loss = ((1-y_true) * scale * anomaly_score) - (y_true * K.log(1 - K.exp(-scale * anomaly_score) + K.epsilon()))
         return loss
+    
+    def custom_metric(y_true, y_pred):
+        mean = K.mean(y_pred)
+        pass
 
     inputs = keras.Input(shape=(360,))
     x = layers.Reshape((1, 360, 1))(inputs)
@@ -224,7 +227,5 @@ def load_explainable_doc_model():
     x = layers.Conv2D(filters=1, kernel_size=(1, 3), activation='sigmoid', strides=1)(x)
     outputs = layers.Flatten()(x)
     model = keras.Model(inputs, outputs, name="explainable_doc_model")
-    model.compile(loss=custom_loss,
-                  optimizer=Adam(lr=0.0005, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False),
-                  metrics=['accuracy'])
+    model.compile(loss=custom_loss, optimizer=Adam())
     return model
